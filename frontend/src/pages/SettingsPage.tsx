@@ -390,7 +390,6 @@ const SettingsPage = () => {
                     <div>
                       <h3>{profile?.full_name}</h3>
                       <p className="text-muted">{profile?.email}</p>
-                      <small className="text-muted">Max 5MB • JPEG, PNG, GIF, WEBP</small>
                     </div>
                   </div>
 

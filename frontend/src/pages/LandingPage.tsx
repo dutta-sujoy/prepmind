@@ -27,9 +27,8 @@ const LandingPage = () => {
             </div>
             <div className="nav-links">
               <a href="#features">Features</a>
-              <a href="#pricing">Pricing</a>
               <a href="#testimonials">Testimonials</a>
-              <a href="#about">About</a>
+              <a href="#pricing">Pricing</a>
               <Link to="/login" className="btn-nav-login">Sign In</Link>
               <Link to="/register" className="btn btn-primary">Start Free</Link>
             </div>
@@ -167,7 +166,7 @@ const LandingPage = () => {
           <div className="testimonials-grid">
             <div className="testimonial-card">
               <div className="testimonial-header">
-                <img src="https://i.pravatar.cc/60?img=10" alt="Arjun Mehta" />
+                <img src="https://i.pravatar.cc/60?img=13" alt="Arjun Mehta" />
                 <div>
                   <h4>Arjun Mehta</h4>
                   <p>Software Engineer @ Google</p>
@@ -184,7 +183,7 @@ const LandingPage = () => {
             </div>
             <div className="testimonial-card">
               <div className="testimonial-header">
-                <img src="https://i.pravatar.cc/60?img=20" alt="Priya Sharma" />
+                <img src="https://i.pravatar.cc/60?img=30" alt="Priya Sharma" />
                 <div>
                   <h4>Priya Sharma</h4>
                   <p>SDE @ Amazon</p>
@@ -201,7 +200,7 @@ const LandingPage = () => {
             </div>
             <div className="testimonial-card">
               <div className="testimonial-header">
-                <img src="https://i.pravatar.cc/60?img=30" alt="Rahul Kapoor" />
+                <img src="https://i.pravatar.cc/60?img=33" alt="Rahul Kapoor" />
                 <div>
                   <h4>Rahul Kapoor</h4>
                   <p>Frontend Developer @ Microsoft</p>

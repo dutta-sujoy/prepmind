@@ -1,5 +1,58 @@
+/* Global Styles */
+html {
+    scroll-behavior: smooth;
+}
+
 .landing-page {
     width: 100%;
+    overflow-x: hidden;
+}
+
+/* Button Transitions */
+.landing-page .btn {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.landing-page .btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.landing-page .btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.landing-page .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.landing-page .btn:active {
+    transform: translateY(0);
+}
+
+/* Container */
+.container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+@media (max-width: 640px) {
+    .container {
+        padding: 0 1.5rem;
+    }
 }
 
 /* Navbar */
@@ -42,6 +95,19 @@
     padding: 0.25rem 0.5rem;
     border-radius: 0.25rem;
     font-weight: 700;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
 }
 
 .nav-links {
@@ -70,6 +136,20 @@
 .hero-section {
     padding: 6rem 0 4rem;
     background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    position: relative;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+        radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 50%);
+    pointer-events: none;
 }
 
 .hero-content {
@@ -77,6 +157,8 @@
     grid-template-columns: 1fr 1fr;
     gap: 4rem;
     align-items: center;
+    position: relative;
+    z-index: 1;
 }
 
 .hero-title {
@@ -105,6 +187,7 @@
     display: flex;
     gap: 1rem;
     margin-bottom: 3rem;
+    flex-wrap: wrap;
 }
 
 .hero-stats {
@@ -153,6 +236,10 @@
 .section-header {
     text-align: center;
     margin-bottom: 4rem;
+    animation: fadeIn 0.8s ease-out;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .section-title {
@@ -160,6 +247,7 @@
     font-weight: 800;
     color: var(--text-primary);
     margin-bottom: 1rem;
+    text-align: center;
 }
 
 .section-subtitle {
@@ -167,6 +255,7 @@
     color: var(--text-secondary);
     max-width: 600px;
     margin: 0 auto;
+    text-align: center;
 }
 
 .features-grid {
@@ -280,6 +369,7 @@
     gap: 2rem;
     max-width: 900px;
     margin: 0 auto;
+    padding-top: 1rem;
 }
 
 .pricing-card {
@@ -289,6 +379,7 @@
     padding: 3rem;
     position: relative;
     transition: all 0.3s;
+    margin-top: 1.5rem;
 }
 
 .pricing-card:hover {
@@ -300,11 +391,39 @@
     background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
     color: white;
     border-color: transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.pricing-card-popular::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg,
+            transparent,
+            rgba(255, 255, 255, 0.1),
+            transparent);
+    transform: rotate(45deg);
+    animation: shine 3s infinite;
+    z-index: 0;
+}
+
+@keyframes shine {
+    0% {
+        transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    }
+
+    100% {
+        transform: translateX(100%) translateY(100%) rotate(45deg);
+    }
 }
 
 .popular-badge {
     position: absolute;
-    top: -1rem;
+    top: 2rem;
     right: 2rem;
     background: #fbbf24;
     color: #000;
@@ -312,17 +431,24 @@
     border-radius: 2rem;
     font-size: 0.75rem;
     font-weight: 800;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+    transform: translateY(-50%);
 }
 
 .pricing-card h3 {
     font-size: 2rem;
     font-weight: 800;
     margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 1;
 }
 
 .pricing-subtitle {
     color: var(--text-secondary);
     margin-bottom: 2rem;
+    position: relative;
+    z-index: 1;
 }
 
 .pricing-card-popular .pricing-subtitle {
@@ -333,6 +459,8 @@
     display: flex;
     align-items: baseline;
     margin-bottom: 2rem;
+    position: relative;
+    z-index: 1;
 }
 
 .price-amount {
@@ -353,6 +481,8 @@
 .pricing-features {
     list-style: none;
     margin-bottom: 2rem;
+    position: relative;
+    z-index: 1;
 }
 
 .pricing-features li {
@@ -365,6 +495,11 @@
 
 .pricing-card-popular .pricing-features li {
     color: white;
+}
+
+.pricing-card .btn {
+    position: relative;
+    z-index: 1;
 }
 
 .pricing-features svg {
@@ -393,18 +528,42 @@
     font-size: 3rem;
     font-weight: 800;
     margin-bottom: 1rem;
+    text-align: center;
 }
 
 .cta-content p {
     font-size: 1.25rem;
     margin-bottom: 2rem;
     opacity: 0.9;
+    text-align: center;
 }
 
 .cta-actions {
     display: flex;
     gap: 1rem;
     justify-content: center;
+    flex-wrap: wrap;
+}
+
+.cta-section .btn-primary {
+    background: white;
+    color: var(--primary-color);
+}
+
+.cta-section .btn-primary:hover {
+    background: #f1f5f9;
+    transform: translateY(-2px);
+}
+
+.cta-section .btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid white;
+    color: white;
+}
+
+.cta-section .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
 }
 
 /* Footer */
@@ -457,6 +616,150 @@
     color: white;
 }
 
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(40px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.8s ease-out;
+}
+
+.slide-in-right {
+    animation: slideInRight 0.8s ease-out 0.2s both;
+}
+
+.hero-mockup {
+    animation: float 3s ease-in-out infinite;
+}
+
+.feature-card {
+    animation: scaleIn 0.5s ease-out backwards;
+}
+
+.feature-card:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.feature-card:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.feature-card:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.feature-card:nth-child(4) {
+    animation-delay: 0.4s;
+}
+
+.feature-card:nth-child(5) {
+    animation-delay: 0.5s;
+}
+
+.feature-card:nth-child(6) {
+    animation-delay: 0.6s;
+}
+
+.testimonial-card {
+    animation: scaleIn 0.6s ease-out backwards;
+}
+
+.testimonial-card:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.testimonial-card:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.testimonial-card:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.pricing-card {
+    animation: fadeIn 0.6s ease-out backwards;
+}
+
+.pricing-card:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.pricing-card:nth-child(2) {
+    animation-delay: 0.3s;
+}
+
+/* Hover Animations */
+.feature-icon {
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover .feature-icon {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.testimonial-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.testimonial-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.stat-avatars img {
+    transition: transform 0.3s ease;
+}
+
+.stat-avatars img:hover {
+    transform: scale(1.2);
+    z-index: 10;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
 
@@ -472,6 +775,11 @@
 
     .nav-links {
         gap: 1rem;
+    }
+
+    /* Disable complex animations on mobile for performance */
+    .hero-mockup {
+        animation: none;
     }
 }
 
