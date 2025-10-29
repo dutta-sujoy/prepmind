@@ -92,6 +92,12 @@ export const authAPI = {
   logout: (refreshToken: string) =>
     api.post('/api/v1/auth/logout', { refresh_token: refreshToken }),
 
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.post('/api/v1/auth/change-password', {
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+
   getMe: () => api.get('/api/v1/auth/me'),
 };
 
@@ -108,6 +114,9 @@ export const userAPI = {
   },
   getPreferences: () => api.get('/api/v1/users/me/preferences'),
   updatePreferences: (data: any) => api.put('/api/v1/users/me/preferences', data),
+  getIntegrations: () => api.get('/api/v1/users/me/integrations'),
+  connectPlatforms: (data: any) => api.post('/api/v1/users/me/integrations', data),
+  deleteAccount: () => api.delete('/api/v1/users/me'),
 };
 
 // Resume APIs

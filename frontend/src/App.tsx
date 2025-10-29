@@ -6,6 +6,7 @@ import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import InterviewPage from './pages/InterviewPage';
 import ResumeAnalyzerPage from './pages/ResumeAnalyzerPage';
+import SettingsPage from './pages/SettingsPage';
 import './App.css';
 
 // Protected Route Component
@@ -49,6 +50,14 @@ function App() {
           element={
             <ProtectedRoute>
               <ResumeAnalyzerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
             </ProtectedRoute>
           }
         />

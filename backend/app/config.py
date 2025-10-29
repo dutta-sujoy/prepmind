@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     STORAGE_BUCKET: str = "prepmind-files"
     RESUME_BUCKET: str = "resumes"
     AUDIO_BUCKET: str = "interview-audio"
+    PROFILE_PIC_BUCKET: str = "profilepic"
     
     # External APIs
     LEETCODE_API_URL: str = "https://leetcode.com/graphql"

@@ -20,13 +20,19 @@ class StorageService:
             from supabase import create_client
             
             # Use service role key for backend (bypasses RLS)
-            api_key = getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', None) or settings.SUPABASE_ANON_KEY
+            # Try different key names
+            api_key = (
+                getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', None) or 
+                getattr(settings, 'SUPABASE_SERVICE_KEY', None) or 
+                settings.SUPABASE_ANON_KEY
+            )
             
             if not settings.SUPABASE_URL or not api_key:
                 print("⚠️  Supabase credentials not configured")
                 return
             
             print(f"🔌 Connecting to Supabase Storage...")
+            print(f"   URL: {settings.SUPABASE_URL}")
             
             self.supabase = create_client(settings.SUPABASE_URL, api_key)
             
@@ -35,17 +41,31 @@ class StorageService:
             
             print(f"   Found {len(buckets)} bucket(s)")
             
-            # Check if resumes bucket exists
-            bucket_exists = any(b.name == self.bucket_name for b in buckets)
+            # List all available buckets
+            for bucket in buckets:
+                print(f"   - {bucket.name}")
             
-            if bucket_exists:
+            # Check if required buckets exist
+            resumes_exists = any(b.name == "resumes" for b in buckets)
+            profilepic_exists = any(b.name == settings.PROFILE_PIC_BUCKET for b in buckets)
+            
+            if resumes_exists and profilepic_exists:
                 self.storage_available = True
-                print(f"✅ Storage ready! Bucket: {self.bucket_name}")
+                print(f"✅ Storage ready! Buckets: resumes, {settings.PROFILE_PIC_BUCKET}")
+            elif resumes_exists or profilepic_exists:
+                self.storage_available = True
+                print(f"⚠️  Some buckets available")
+                if not resumes_exists:
+                    print(f"   ❌ Missing: resumes")
+                if not profilepic_exists:
+                    print(f"   ❌ Missing: {settings.PROFILE_PIC_BUCKET}")
             else:
-                print(f"⚠️  Bucket '{self.bucket_name}' not found")
+                print(f"⚠️  Required buckets not found")
                 
         except Exception as e:
             print(f"⚠️  Storage init failed: {e}")
+            import traceback
+            traceback.print_exc()
     
     
     def upload_resume(
@@ -111,6 +131,104 @@ class StorageService:
             return fallback_path
     
     
+    def upload_avatar(
+        self, 
+        file_content: bytes, 
+        user_id: uuid.UUID, 
+        filename: str
+    ) -> str:
+        """Upload profile picture to Supabase Storage"""
+        
+        print(f"\n{'='*60}")
+        print(f"🖼️  AVATAR UPLOAD REQUEST")
+        print(f"{'='*60}")
+        print(f"User ID: {user_id}")
+        print(f"Filename: {filename}")
+        print(f"File size: {len(file_content)} bytes")
+        print(f"Storage available: {self.storage_available}")
+        print(f"Supabase client: {self.supabase is not None}")
+        
+        # If storage not available, return local path
+        if not self.storage_available or not self.supabase:
+            file_ext = filename.split(".")[-1].lower()
+            local_path = f"/storage/profilepic/{user_id}/{uuid.uuid4()}.{file_ext}"
+            print(f"⚠️  Storage not available, using local path: {local_path}")
+            print(f"{'='*60}\n")
+            return local_path
+        
+        try:
+            # Generate unique filename
+            file_ext = filename.split(".")[-1].lower()
+            
+            # Validate image file type
+            allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+            if file_ext not in allowed_extensions:
+                raise BadRequestException(f"Invalid file type. Allowed: {', '.join(allowed_extensions)}")
+            
+            unique_filename = f"{user_id}/{uuid.uuid4()}.{file_ext}"
+            
+            print(f"\n📤 UPLOADING TO SUPABASE...")
+            print(f"   Bucket: {settings.PROFILE_PIC_BUCKET}")
+            print(f"   Path: {unique_filename}")
+            print(f"   Content-Type: {self._get_image_mime_type(file_ext)}")
+            
+            # Check if bucket exists
+            try:
+                bucket_info = self.supabase.storage.get_bucket(settings.PROFILE_PIC_BUCKET)
+                print(f"   ✓ Bucket exists: {bucket_info}")
+            except Exception as bucket_err:
+                print(f"   ❌ Bucket check failed: {bucket_err}")
+            
+            # Upload file to Supabase Storage (profilepic bucket)
+            print(f"\n   Attempting upload...")
+            result = self.supabase.storage.from_(settings.PROFILE_PIC_BUCKET).upload(
+                path=unique_filename,
+                file=file_content,
+                file_options={
+                    "content-type": self._get_image_mime_type(file_ext),
+                    "cache-control": "3600",
+                    "upsert": "true"  # Replace if exists
+                }
+            )
+            
+            print(f"\n✅ UPLOAD SUCCESSFUL!")
+            print(f"   Result: {result}")
+            
+            # Get public URL
+            public_url = self.supabase.storage.from_(settings.PROFILE_PIC_BUCKET).get_public_url(unique_filename)
+            
+            print(f"\n🔗 PUBLIC URL:")
+            print(f"   {public_url}")
+            print(f"{'='*60}\n")
+            
+            return public_url
+            
+        except BadRequestException:
+            raise
+        except Exception as e:
+            print(f"\n❌ AVATAR UPLOAD FAILED!")
+            print(f"   Error: {str(e)}")
+            print(f"   Error type: {type(e).__name__}")
+            
+            # Print full traceback
+            import traceback
+            print(f"\n   Full traceback:")
+            traceback.print_exc()
+            
+            # Try to get more details from the error
+            if hasattr(e, '__dict__'):
+                print(f"\n   Error attributes:")
+                for key, value in e.__dict__.items():
+                    print(f"     {key}: {value}")
+            
+            # Fallback to local path
+            file_ext = filename.split(".")[-1].lower()
+            fallback_path = f"/storage/profilepic/{user_id}/{uuid.uuid4()}.{file_ext}"
+            print(f"\n⚠️  Using fallback path: {fallback_path}")
+            print(f"{'='*60}\n")
+            return fallback_path
+    
+    
     def _get_mime_type(self, file_ext: str) -> str:
         """Get MIME type for file extension"""
         mime_types = {
@@ -120,6 +238,18 @@ class StorageService:
             "txt": "text/plain"
         }
         return mime_types.get(file_ext.lower(), "application/octet-stream")
+    
+    
+    def _get_image_mime_type(self, file_ext: str) -> str:
+        """Get MIME type for image file extension"""
+        mime_types = {
+            "jpg": "image/jpeg",
+            "jpeg": "image/jpeg",
+            "png": "image/png",
+            "gif": "image/gif",
+            "webp": "image/webp"
+        }
+        return mime_types.get(file_ext.lower(), "image/jpeg")
     
     
     def delete_resume(self, file_url: str) -> bool:

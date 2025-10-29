@@ -79,7 +79,7 @@ const Dashboard = () => {
       {/* Sidebar */}
       <aside className="dashboard-sidebar">
         <div className="sidebar-header">
-          <Link to="/" className="sidebar-logo">
+          <Link to="/dashboard" className="sidebar-logo">
             <Brain size={32} color="#3b82f6" />
             <span>PrepMind</span>
           </Link>
