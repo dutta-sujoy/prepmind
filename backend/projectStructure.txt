@@ -1,0 +1,119 @@
+prepmind-backend/
+│
+├── app/
+│   ├── __init__.py
+│   ├── main.py                          # FastAPI app entry point
+│   ├── config.py                        # Configuration & environment variables
+│   ├── database.py                      # Database connection & session
+│   ├── dependencies.py                  # Shared dependencies (auth, db)
+│   │
+│   ├── api/
+│   │   ├── __init__.py
+│   │   └── v1/
+│   │       ├── __init__.py
+│   │       ├── api.py                   # Router aggregator
+│   │       └── endpoints/
+│   │           ├── __init__.py
+│   │           ├── auth.py              # Authentication endpoints
+│   │           ├── users.py             # User profile management
+│   │           ├── resume.py            # Resume upload & analysis
+│   │           ├── interview.py         # Interview management (REST)
+│   │           ├── interview_ws.py      # Real-time interview WebSocket
+│   │           ├── roadmap.py           # Career roadmap
+│   │           ├── dashboard.py         # Skill progress dashboard
+│   │           ├── platforms.py         # External platform sync
+│   │           ├── jobs.py              # Job feed & applications
+│   │           ├── projects.py          # Project guide
+│   │           ├── cover_letter.py      # Cover letter generator
+│   │           ├── companies.py         # Company prep packs
+│   │           ├── notifications.py     # Notifications
+│   │           ├── analytics.py         # User analytics
+│   │           └── utils.py             # Utility endpoints
+│   │
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── user.py                      # User & UserPreference models
+│   │   ├── resume.py                    # Resume model
+│   │   ├── interview.py                 # Interview & InterviewResult models
+│   │   ├── roadmap.py                   # CareerRoadmap & Milestone models
+│   │   ├── progress.py                  # SkillProgress model
+│   │   ├── project.py                   # Project model
+│   │   ├── cover_letter.py              # CoverLetter model
+│   │   ├── job.py                       # Job, JobBookmark, JobApplication models
+│   │   ├── company.py                   # Company & CompanyQuestion models
+│   │   ├── notification.py              # Notification model
+│   │   ├── analytics.py                 # UserAnalytics model
+│   │   └── token.py                     # RefreshToken model
+│   │
+│   ├── schemas/
+│   │   ├── __init__.py
+│   │   ├── user.py                      # User Pydantic schemas
+│   │   ├── auth.py                      # Auth request/response schemas
+│   │   ├── resume.py                    # Resume schemas
+│   │   ├── interview.py                 # Interview schemas
+│   │   ├── roadmap.py                   # Roadmap schemas
+│   │   ├── progress.py                  # Progress schemas
+│   │   ├── project.py                   # Project schemas
+│   │   ├── job.py                       # Job schemas
+│   │   ├── company.py                   # Company schemas
+│   │   ├── notification.py              # Notification schemas
+│   │   └── common.py                    # Common/shared schemas
+│   │
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── auth_service.py              # Authentication logic
+│   │   ├── resume_service.py            # Resume processing
+│   │   ├── interview_service.py         # Interview management
+│   │   ├── roadmap_service.py           # Roadmap generation
+│   │   ├── platform_service.py          # External platform APIs
+│   │   ├── job_service.py               # Job scraping/aggregation
+│   │   ├── storage_service.py           # File upload (Supabase Storage)
+│   │   ├── notification_service.py      # Notification delivery
+│   │   └── analytics_service.py         # Analytics calculation
+│   │
+│   ├── agents/
+│   │   ├── __init__.py
+│   │   ├── base_agent.py                # Base agent class
+│   │   ├── resume_agent.py              # Resume analysis agent
+│   │   ├── interview_agent.py           # Real-time interview agent
+│   │   ├── roadmap_agent.py             # Roadmap generation agent
+│   │   ├── project_agent.py             # Project suggestion agent
+│   │   └── cover_letter_agent.py        # Cover letter generation agent
+│   │
+│   ├── tools/
+│   │   ├── __init__.py
+│   │   ├── resume_tools.py              # Resume parsing tools
+│   │   ├── platform_tools.py            # LeetCode, GitHub API tools
+│   │   ├── web_scraper_tools.py         # Job scraping tools
+│   │   └── document_tools.py            # PDF/DOCX processing tools
+│   │
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── security.py                  # Password hashing, JWT
+│   │   └── exceptions.py                # Custom exceptions
+│   │
+│   └── utils/
+│       ├── __init__.py
+│       ├── pdf_parser.py                # PDF text extraction
+│       ├── ats_scorer.py                # ATS scoring algorithm
+│       ├── voice_processor.py           # Voice analysis (future)
+│       └── helpers.py                   # Common helper functions
+│
+├── alembic/
+│   ├── versions/                        # Migration files
+│   ├── env.py
+│   └── script.py.mako
+│
+├── tests/
+│   ├── __init__.py
+│   ├── test_auth.py
+│   ├── test_resume.py
+│   └── test_interview.py
+│
+├── .env                                  # Environment variables
+├── .env.example                          # Example env file
+├── .gitignore
+├── alembic.ini                           # Alembic config
+├── requirements.txt                      # Python dependencies
+├── README.md
+└── run.py                                # App runner script
