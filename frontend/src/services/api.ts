@@ -137,6 +137,8 @@ export const resumeAPI = {
       params: { target_role: targetRole },
     }),
   getAnalysis: (resumeId: string) => api.get(`/api/v1/resumes/${resumeId}/analysis`),
+  setPrimary: (resumeId: string) => api.post(`/api/v1/resumes/${resumeId}/set-primary`),
+  download: (resumeId: string) => api.get(`/api/v1/resumes/${resumeId}/download`),
   compareWithJob: (resumeId: string, jobDescription: string, jobTitle: string) =>
     api.post(`/api/v1/resumes/${resumeId}/compare`, { job_description: jobDescription, job_title: jobTitle }),
 };

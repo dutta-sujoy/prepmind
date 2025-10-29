@@ -1,7 +1,5 @@
-import { useState, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
 import {
-  Brain,
   Upload,
   FileText,
   CheckCircle,
@@ -14,9 +12,22 @@ import {
   Sparkles,
   Target,
   Award,
+  Star,
+  MoreVertical,
+  RefreshCw,
+  Plus,
 } from 'lucide-react';
 import { resumeAPI } from '../services/api';
 import './ResumeAnalyzerPage.css';
+
+interface Resume {
+  id: string;
+  file_name: string;
+  file_type: string;
+  is_primary: boolean;
+  ats_score: number | null;
+  created_at: string;
+}
 
 interface ResumeAnalysis {
   ats_score: number;
@@ -28,14 +39,38 @@ interface ResumeAnalysis {
 }
 
 const ResumeAnalyzerPage = () => {
-  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // State management
+  const [view, setView] = useState<'dashboard' | 'upload' | 'analysis'>('dashboard');
+  const [resumes, setResumes] = useState<Resume[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<ResumeAnalysis | null>(null);
+  const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
   const [targetRole, setTargetRole] = useState('Software Engineer');
   const [error, setError] = useState('');
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+
+  // Load all resumes
+  useEffect(() => {
+    loadResumes();
+  }, []);
+
+  const loadResumes = async () => {
+    try {
+      setLoading(true);
+      const response = await resumeAPI.list();
+      setResumes(response.data);
+    } catch (err: any) {
+      console.error('Error loading resumes:', err);
+      setError('Failed to load resumes');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -69,66 +104,397 @@ const ResumeAnalyzerPage = () => {
     setError('');
 
     try {
-      const response = await resumeAPI.upload(file, false, true, targetRole);
-      setAnalyzing(true);
-      
-      // Simulate analysis time
-      setTimeout(() => {
-        setAnalysis({
-          ats_score: 80,
-          strengths: [
-            'Clear and concise format',
-            'Good use of action verbs',
-            'Quantifiable achievements included',
-            'Relevant technical skills listed',
-          ],
-          weaknesses: [
-            'Missing ATS-friendly keywords for target role',
-            'Experience section could be more detailed',
-            'Projects lack technical depth',
-          ],
-          suggestions: [
-            'Add more industry-specific keywords like "React", "Node.js", "API Development"',
-            'Include metrics for each project (e.g., "improved performance by 40%")',
-            'Expand on your role and responsibilities in each position',
-            'Add a professional summary at the top',
-          ],
-          keywords: ['JavaScript', 'React', 'Node.js', 'MongoDB', 'REST API', 'Git'],
-          missing_sections: ['Certifications', 'Awards', 'Publications'],
-        });
-        setAnalyzing(false);
-        setUploading(false);
-      }, 3000);
+      await resumeAPI.upload(file, false, true, targetRole);
+      await loadResumes();
+      setView('dashboard');
+      setFile(null);
+      setTargetRole('Software Engineer');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to upload resume. Please try again.');
+    } finally {
       setUploading(false);
     }
   };
 
-  const resetUpload = () => {
-    setFile(null);
-    setAnalysis(null);
-    setError('');
+  const handleDelete = async (resumeId: string) => {
+    if (!window.confirm('Are you sure you want to delete this resume?')) return;
+    
+    try {
+      await resumeAPI.delete(resumeId);
+      await loadResumes();
+      setActiveMenu(null);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to delete resume');
+    }
   };
 
-  if (analysis) {
-    return (
-      <div className="resume-page">
-        <header className="resume-header">
-          <Link to="/dashboard" className="back-button">
-            <ArrowLeft size={20} />
-            Back to Dashboard
-          </Link>
-          <div className="header-logo">
-            <Brain size={32} color="#3b82f6" />
-            <span>Resume Analysis</span>
-          </div>
-          <button className="btn btn-secondary" onClick={resetUpload}>
-            Analyze Another
-          </button>
-        </header>
+  const handleSetPrimary = async (resumeId: string) => {
+    try {
+      await resumeAPI.setPrimary(resumeId);
+      await loadResumes();
+      setActiveMenu(null);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to set as primary');
+    }
+  };
 
+  const handleDownload = async (resumeId: string) => {
+    try {
+      const response = await resumeAPI.download(resumeId);
+      window.open(response.data.download_url, '_blank');
+      setActiveMenu(null);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to download resume');
+    }
+  };
+
+  const handleViewAnalysis = async (resumeId: string) => {
+    try {
+      setLoadingAnalysis(true);
+      setSelectedResumeId(resumeId);
+      setError('');
+      
+      const response = await resumeAPI.getAnalysis(resumeId);
+      
+      console.log('Analysis response:', response.data); // Debug log
+      
+      // The backend returns analysis data, parse it correctly
+      const analysisData = response.data;
+      
+      // Check if analysis data exists
+      if (!analysisData || Object.keys(analysisData).length === 0) {
+        setError('No analysis found for this resume. Please analyze it first.');
+        setLoadingAnalysis(false);
+        return;
+      }
+      
+      // Transform backend response to match our interface
+      const formattedAnalysis: ResumeAnalysis = {
+        ats_score: analysisData.ats_score || 0,
+        strengths: analysisData.strengths || [],
+        weaknesses: analysisData.weaknesses || [],
+        suggestions: analysisData.suggestions || [],
+        keywords: analysisData.keywords || [],
+        missing_sections: analysisData.missing_sections || []
+      };
+      
+      setAnalysis(formattedAnalysis);
+      setView('analysis');
+      setActiveMenu(null);
+    } catch (err: any) {
+      console.error('Error loading analysis:', err);
+      setError(err.response?.data?.detail || 'Failed to load analysis. Make sure the resume has been analyzed.');
+    } finally {
+      setLoadingAnalysis(false);
+    }
+  };
+
+  const handleReanalyze = async (resumeId: string) => {
+    try {
+      await resumeAPI.analyze(resumeId, targetRole);
+      await loadResumes();
+      setActiveMenu(null);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to re-analyze resume');
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getScoreColor = (score: number | null) => {
+    if (!score) return '#94a3b8';
+    if (score >= 80) return '#10b981';
+    if (score >= 60) return '#f59e0b';
+    return '#ef4444';
+  };
+
+  // Dashboard View - List all resumes
+  const renderDashboard = () => (
+    <div className="resume-content">
+      {loadingAnalysis && (
+        <div className="loading-overlay">
+          <div className="loading-modal">
+            <div className="spinner"></div>
+            <p>Loading analysis...</p>
+          </div>
+        </div>
+      )}
+
+      <div className="page-header">
+        <div className="page-title">
+          <h1>Resume Analyzer</h1>
+          <p>Manage and analyze your resumes with AI</p>
+        </div>
+        <div className="page-actions">
+          <button className="btn btn-secondary" onClick={loadResumes} disabled={loading}>
+            <RefreshCw size={18} />
+            Refresh
+          </button>
+          <button className="btn btn-primary" onClick={() => setView('upload')}>
+            <Plus size={20} />
+            Upload Resume
+          </button>
+        </div>
+      </div>
+
+      <div className="resume-dashboard">
+
+        {error && (
+          <div className="error-banner">
+            <AlertCircle size={20} />
+            <span>{error}</span>
+            <button onClick={() => setError('')}>×</button>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="loading-container">
+            <div className="spinner"></div>
+            <p>Loading resumes...</p>
+          </div>
+        ) : resumes.length === 0 ? (
+          <div className="empty-state">
+            <FileText size={64} color="#94a3b8" />
+            <h3>No Resumes Yet</h3>
+            <p>Upload your first resume to get started with AI-powered analysis</p>
+            <button className="btn btn-primary btn-large" onClick={() => setView('upload')}>
+              <Upload size={20} />
+              Upload Resume
+            </button>
+          </div>
+        ) : (
+          <div className="resumes-grid">
+            {resumes.map((resume) => (
+              <div key={resume.id} className={`resume-card ${resume.is_primary ? 'primary' : ''}`}>
+                {resume.is_primary && (
+                  <div className="primary-badge">
+                    <Star size={14} fill="#fbbf24" color="#fbbf24" />
+                    Primary
+                  </div>
+                )}
+
+                <div className="resume-card-header">
+                  <div className="file-icon">
+                    <FileText size={32} color="#3b82f6" />
+                  </div>
+                  <button 
+                    className="menu-button"
+                    onClick={() => setActiveMenu(activeMenu === resume.id ? null : resume.id)}
+                  >
+                    <MoreVertical size={20} />
+                  </button>
+
+                  {activeMenu === resume.id && (
+                    <div className="dropdown-menu">
+                      {resume.ats_score && (
+                        <button onClick={() => handleViewAnalysis(resume.id)}>
+                          <Eye size={16} />
+                          View Analysis
+                        </button>
+                      )}
+                      <button onClick={() => handleReanalyze(resume.id)}>
+                        <RefreshCw size={16} />
+                        Re-analyze
+                      </button>
+                      <button onClick={() => handleDownload(resume.id)}>
+                        <Download size={16} />
+                        Download
+                      </button>
+                      {!resume.is_primary && (
+                        <button onClick={() => handleSetPrimary(resume.id)}>
+                          <Star size={16} />
+                          Set as Primary
+                        </button>
+                      )}
+                      <button className="danger" onClick={() => handleDelete(resume.id)}>
+                        <Trash2 size={16} />
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="resume-card-body">
+                  <h3 className="resume-name">{resume.file_name}</h3>
+                  <div className="resume-meta">
+                    <span className="file-type">{resume.file_type.toUpperCase()}</span>
+                    <span className="upload-date">{formatDate(resume.created_at)}</span>
+                  </div>
+
+                  {resume.ats_score !== null ? (
+                    <div className="ats-score-container">
+                      <div className="score-circle" style={{ borderColor: getScoreColor(resume.ats_score) }}>
+                        <span className="score-value" style={{ color: getScoreColor(resume.ats_score) }}>
+                          {resume.ats_score}
+                        </span>
+                        <span className="score-label">ATS</span>
+                      </div>
+                      <div className="score-status">
+                        <span>ATS Score</span>
+                        <p className="score-desc">
+                          {resume.ats_score >= 80 ? 'Excellent' : 
+                           resume.ats_score >= 60 ? 'Good' : 'Needs Improvement'}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="no-analysis">
+                      <AlertCircle size={20} color="#94a3b8" />
+                      <span>Not analyzed yet</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="resume-card-footer">
+                  {resume.ats_score ? (
+                    <button 
+                      className="btn btn-primary btn-small"
+                      onClick={() => handleViewAnalysis(resume.id)}
+                    >
+                      <Eye size={16} />
+                      View Analysis
+                    </button>
+                  ) : (
+                    <button 
+                      className="btn btn-secondary btn-small"
+                      onClick={() => handleReanalyze(resume.id)}
+                    >
+                      <Sparkles size={16} />
+                      Analyze Now
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Upload View
+  const renderUpload = () => (
+    <div className="resume-content">
+      <div className="resume-upload-section">
+        <button className="back-button-inline" onClick={() => setView('dashboard')}>
+          <ArrowLeft size={20} />
+          Back to Resumes
+        </button>
+        <div className="upload-container">
+          <div className="upload-header">
+            <h1>Upload New Resume</h1>
+            <p>Upload your resume and get personalized AI-powered feedback</p>
+          </div>
+
+          <div className="upload-form">
+            <div className="target-role-input">
+              <label htmlFor="targetRole">Target Role (optional)</label>
+              <input
+                type="text"
+                id="targetRole"
+                value={targetRole}
+                onChange={(e) => setTargetRole(e.target.value)}
+                placeholder="e.g., Software Engineer, Data Scientist"
+              />
+            </div>
+
+            {!file ? (
+              <div
+                className="upload-dropzone"
+                onDrop={handleDrop}
+                onDragOver={(e) => e.preventDefault()}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <div className="dropzone-icon">
+                  <Upload size={48} />
+                </div>
+                <h3>Drag & drop your resume here</h3>
+                <p>or click to browse files</p>
+                <p className="file-info">Supports PDF, DOCX (Max 5MB)</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.docx"
+                  onChange={handleFileSelect}
+                  style={{ display: 'none' }}
+                />
+              </div>
+            ) : (
+              <div className="file-preview">
+                <div className="file-info-card">
+                  <FileText size={48} color="#3b82f6" />
+                  <div className="file-details">
+                    <h4>{file.name}</h4>
+                    <p>{(file.size / 1024).toFixed(2)} KB</p>
+                  </div>
+                  <button className="delete-btn" onClick={() => setFile(null)}>
+                    <Trash2 size={20} />
+                  </button>
+                </div>
+
+                {error && (
+                  <div className="error-message">
+                    <AlertCircle size={20} />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                <button
+                  className="btn btn-primary btn-large"
+                  onClick={handleUpload}
+                  disabled={uploading}
+                >
+                  {uploading ? 'Uploading...' : 'Upload & Analyze'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="features-grid">
+            <div className="feature-item">
+              <div className="feature-icon">
+                <TrendingUp size={24} />
+              </div>
+              <h4>ATS Score</h4>
+              <p>Get instant ATS compatibility scoring</p>
+            </div>
+            <div className="feature-item">
+              <div className="feature-icon">
+                <Sparkles size={24} />
+              </div>
+              <h4>AI Feedback</h4>
+              <p>Personalized suggestions from AI</p>
+            </div>
+            <div className="feature-item">
+              <div className="feature-icon">
+                <Target size={24} />
+              </div>
+              <h4>Keywords</h4>
+              <p>Optimize for your target role</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Analysis View
+  const renderAnalysis = () => {
+    if (!analysis) return null;
+
+    return (
+      <div className="resume-content">
         <div className="resume-analysis-content">
+          <button className="back-button-inline" onClick={() => setView('dashboard')}>
+            <ArrowLeft size={20} />
+            Back to Resumes
+          </button>
           <div className="analysis-container">
             <div className="analysis-hero">
               <div className="score-showcase">
@@ -140,7 +506,7 @@ const ResumeAnalyzerPage = () => {
                       cy="100"
                       r="90"
                       fill="none"
-                      stroke="#10b981"
+                      stroke={getScoreColor(analysis.ats_score)}
                       strokeWidth="20"
                       strokeDasharray="565.5"
                       strokeDashoffset={565.5 - (565.5 * analysis.ats_score) / 100}
@@ -154,9 +520,12 @@ const ResumeAnalyzerPage = () => {
                   </div>
                 </div>
                 <div className="score-status">
-                  <Award size={32} color="#10b981" />
-                  <h2>Great Resume!</h2>
-                  <p>Your resume is well-optimized for ATS systems</p>
+                  <Award size={32} color={getScoreColor(analysis.ats_score)} />
+                  <h2>
+                    {analysis.ats_score >= 80 ? 'Great Resume!' : 
+                     analysis.ats_score >= 60 ? 'Good Resume!' : 'Needs Improvement'}
+                  </h2>
+                  <p>Your resume is {analysis.ats_score >= 80 ? 'well-optimized' : analysis.ats_score >= 60 ? 'moderately optimized' : 'not well-optimized'} for ATS systems</p>
                 </div>
               </div>
             </div>
@@ -271,154 +640,27 @@ const ResumeAnalyzerPage = () => {
             </div>
 
             <div className="action-buttons">
-              <button className="btn btn-secondary btn-large">
+              <button className="btn btn-secondary btn-large" onClick={() => handleDownload(selectedResumeId!)}>
                 <Download size={20} />
                 Download Report
               </button>
-              <button className="btn btn-primary btn-large">
-                <Eye size={20} />
-                View Detailed Report
+              <button className="btn btn-primary btn-large" onClick={() => setView('dashboard')}>
+                Back to Resumes
               </button>
             </div>
           </div>
         </div>
       </div>
     );
-  }
+  };
 
+  // Main Render
   return (
-    <div className="resume-page">
-      <header className="resume-header">
-        <Link to="/dashboard" className="back-button">
-          <ArrowLeft size={20} />
-          Back to Dashboard
-        </Link>
-        <div className="header-logo">
-          <Brain size={32} color="#3b82f6" />
-          <span>AI Resume Reviewer</span>
-        </div>
-      </header>
-
-      <div className="resume-upload-section">
-        <div className="upload-container">
-          <div className="upload-header">
-            <h1>AI Resume Reviewer</h1>
-            <p>Upload your resume and get personalized feedback to improve your chances</p>
-          </div>
-
-          <div className="upload-form">
-            <div className="target-role-input">
-              <label htmlFor="targetRole">Target Role (optional)</label>
-              <input
-                type="text"
-                id="targetRole"
-                value={targetRole}
-                onChange={(e) => setTargetRole(e.target.value)}
-                placeholder="e.g., Software Engineer, Data Scientist"
-              />
-            </div>
-
-            {!file ? (
-              <div
-                className="upload-dropzone"
-                onDrop={handleDrop}
-                onDragOver={(e) => e.preventDefault()}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <div className="dropzone-icon">
-                  <Upload size={48} />
-                </div>
-                <h3>Drag & drop your resume here</h3>
-                <p>or click to browse files</p>
-                <p className="file-info">Supports PDF, DOCX (Max 5MB)</p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,.docx"
-                  onChange={handleFileSelect}
-                  style={{ display: 'none' }}
-                />
-              </div>
-            ) : (
-              <div className="file-preview">
-                <div className="file-info-card">
-                  <FileText size={48} color="#3b82f6" />
-                  <div className="file-details">
-                    <h4>{file.name}</h4>
-                    <p>{(file.size / 1024).toFixed(2)} KB</p>
-                  </div>
-                  <button className="delete-btn" onClick={resetUpload}>
-                    <Trash2 size={20} />
-                  </button>
-                </div>
-
-                {error && (
-                  <div className="error-message">
-                    <AlertCircle size={20} />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                <button
-                  className="btn btn-primary btn-large"
-                  onClick={handleUpload}
-                  disabled={uploading || analyzing}
-                >
-                  {uploading ? 'Uploading...' : analyzing ? 'Analyzing...' : 'Analyze Resume'}
-                </button>
-
-                {analyzing && (
-                  <div className="analyzing-status">
-                    <div className="analyzing-animation">
-                      <div className="spinner"></div>
-                    </div>
-                    <p>Analyzing your resume with AI...</p>
-                    <div className="analyzing-steps">
-                      <div className="step active">
-                        <CheckCircle size={16} />
-                        <span>Parsing content</span>
-                      </div>
-                      <div className="step active">
-                        <CheckCircle size={16} />
-                        <span>Checking ATS compatibility</span>
-                      </div>
-                      <div className="step">
-                        <div className="step-loader"></div>
-                        <span>Generating suggestions</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="features-grid">
-            <div className="feature-item">
-              <div className="feature-icon">
-                <TrendingUp size={24} />
-              </div>
-              <h4>ATS Score</h4>
-              <p>Get instant ATS compatibility scoring</p>
-            </div>
-            <div className="feature-item">
-              <div className="feature-icon">
-                <Sparkles size={24} />
-              </div>
-              <h4>AI Feedback</h4>
-              <p>Personalized suggestions from AI</p>
-            </div>
-            <div className="feature-item">
-              <div className="feature-icon">
-                <Target size={24} />
-              </div>
-              <h4>Keywords</h4>
-              <p>Optimize for your target role</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <>
+      {view === 'dashboard' && renderDashboard()}
+      {view === 'upload' && renderUpload()}
+      {view === 'analysis' && renderAnalysis()}
+    </>
   );
 };
 

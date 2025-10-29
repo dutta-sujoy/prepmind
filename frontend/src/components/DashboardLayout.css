@@ -1,0 +1,137 @@
+.dashboard-layout {
+    display: flex;
+    min-height: 100vh;
+    background: var(--surface);
+}
+
+/* Sidebar */
+.layout-sidebar {
+    width: 280px;
+    background: white;
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    z-index: 100;
+    overflow-y: auto;
+}
+
+.layout-sidebar-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.layout-sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.layout-sidebar-nav {
+    flex: 1;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.layout-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: all 0.2s;
+    font-size: 1rem;
+}
+
+.layout-nav-item:hover {
+    background: var(--surface);
+    color: var(--text-primary);
+}
+
+.layout-nav-item.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.layout-sidebar-footer {
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.layout-logout-button {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.875rem 1rem;
+    background: none;
+    border: none;
+    border-radius: 0.5rem;
+    color: #dc2626;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1rem;
+}
+
+.layout-logout-button:hover {
+    background: #fef2f2;
+}
+
+/* Main Content */
+.layout-main-content {
+    flex: 1;
+    margin-left: 280px;
+    min-height: 100vh;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .layout-sidebar {
+        width: 70px;
+    }
+
+    .layout-sidebar-logo span {
+        display: none;
+    }
+
+    .layout-nav-item span {
+        display: none;
+    }
+
+    .layout-logout-button span {
+        display: none;
+    }
+
+    .layout-main-content {
+        margin-left: 70px;
+    }
+}
+
+@media (max-width: 640px) {
+    .layout-sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s;
+    }
+
+    .layout-sidebar.open {
+        transform: translateX(0);
+    }
+
+    .layout-main-content {
+        margin-left: 0;
+    }
+}
+

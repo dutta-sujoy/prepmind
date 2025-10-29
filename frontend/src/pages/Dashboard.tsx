@@ -92,7 +92,7 @@ const Dashboard = () => {
           </Link>
           <Link to="/resume-analyzer" className="nav-item">
             <FileText size={20} />
-            <span>Resume Builder</span>
+            <span>Resume Analyzer</span>
           </Link>
           <Link to="/interview" className="nav-item">
             <Mic size={20} />

@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import InterviewPage from './pages/InterviewPage';
 import ResumeAnalyzerPage from './pages/ResumeAnalyzerPage';
 import SettingsPage from './pages/SettingsPage';
+import DashboardLayout from './components/DashboardLayout';
 import './App.css';
 
 // Protected Route Component
@@ -41,7 +42,9 @@ function App() {
           path="/interview"
           element={
             <ProtectedRoute>
-              <InterviewPage />
+              <DashboardLayout>
+                <InterviewPage />
+              </DashboardLayout>
             </ProtectedRoute>
           }
         />
@@ -49,7 +52,9 @@ function App() {
           path="/resume-analyzer"
           element={
             <ProtectedRoute>
-              <ResumeAnalyzerPage />
+              <DashboardLayout>
+                <ResumeAnalyzerPage />
+              </DashboardLayout>
             </ProtectedRoute>
           }
         />
@@ -57,7 +62,9 @@ function App() {
           path="/settings"
           element={
             <ProtectedRoute>
-              <SettingsPage />
+              <DashboardLayout>
+                <SettingsPage />
+              </DashboardLayout>
             </ProtectedRoute>
           }
         />

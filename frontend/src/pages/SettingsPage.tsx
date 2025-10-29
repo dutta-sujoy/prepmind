@@ -22,7 +22,6 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { userAPI, authAPI } from '../services/api';
-import Navbar from '../components/Navbar';
 import './SettingsPage.css';
 
 interface UserProfile {
@@ -295,7 +294,6 @@ const SettingsPage = () => {
   if (loading) {
     return (
       <div className="page-container">
-        <Navbar />
         <div className="loading-container">
           <div className="spinner"></div>
           <p>Loading settings...</p>
@@ -306,7 +304,6 @@ const SettingsPage = () => {
 
   return (
     <div className="page-container">
-      <Navbar />
       <div className="settings-page">
         <div className="settings-container">
           {message && (
