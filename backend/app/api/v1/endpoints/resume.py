@@ -1,5 +1,7 @@
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, UploadFile, File, status, Query
 from sqlalchemy.orm import Session
+import google.generativeai as genai
 from typing import List, Optional
 import uuid
 from datetime import datetime
@@ -27,7 +29,54 @@ ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 
-from app.services.storage_service import storage_service  # Add this import
+@router.get("/test-gemini")
+async def test_gemini():
+    """Test endpoint to verify Gemini API is working"""
+    try:
+        from app.config import settings
+        genai.configure(api_key=settings.GOOGLE_API_KEY)
+
+        model = genai.GenerativeModel('gemini-2.5-flash')
+
+        test_prompt = """Analyze this simple test and return JSON:
+        
+Test data: This is a software engineer resume with Python and React skills.
+
+Return only this JSON structure:
+{
+    "status": "working",
+    "test_score": 85,
+    "message": "Gemini API is functioning correctly"
+}"""
+
+        print("📡 Testing Gemini API...")
+        response = model.generate_content(test_prompt)
+
+        if not response or not response.text:
+            return {
+                "success": False,
+                "error": "Gemini returned empty response",
+                "response_obj": str(response)
+            }
+
+        print(f"✅ Gemini response: {response.text}")
+
+        return {
+            "success": True,
+            "message": "Gemini API is working",
+            "response": response.text,
+            "api_key_preview": settings.GOOGLE_API_KEY[:10] + "..."
+        }
+
+    except Exception as e:
+        import traceback
+        return {
+            "success": False,
+            "error": str(e),
+            "error_type": type(e).__name__,
+            "traceback": traceback.format_exc()
+        }
+
 
 @router.post("/upload", response_model=ResumeResponse, status_code=status.HTTP_201_CREATED)
 async def upload_resume(
@@ -39,50 +88,57 @@ async def upload_resume(
     db: Session = Depends(get_db)
 ):
     """Upload and analyze resume"""
-    
+
     # Validate file extension
     file_ext = file.filename.split(".")[-1].lower()
     if f".{file_ext}" not in ALLOWED_EXTENSIONS:
         raise BadRequestException(
             f"Invalid file type. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
         )
-    
+
     # Read file content
     file_content = await file.read()
     file_size = len(file_content)
-    
+
     # Validate file size
     if file_size > MAX_FILE_SIZE:
         raise BadRequestException(
             f"File too large. Maximum size: {MAX_FILE_SIZE / 1024 / 1024}MB"
         )
-    
+
     if file_size == 0:
         raise BadRequestException("File is empty")
-    
+
     # Extract text from file
     print(f"Extracting text from {file.filename}...")
     extracted_text = extract_text_from_file(file_content, file.content_type)
-    
+
     if not extracted_text:
         raise BadRequestException("Could not extract text from file")
-    
+
     print(f"Extracted {len(extracted_text)} characters")
-    
+
     # Parse resume
     print("Parsing resume with AI...")
     parsed_data = ResumeService.parse_resume_text(extracted_text)
-    
-    # Calculate ATS score
-    ats_score = ResumeService._calculate_ats_score(parsed_data)
-    
-    # Perform analysis if requested
+
+    # Perform analysis if requested - let AI determine the score
     analysis_result = None
+    ats_score = None
+
     if analyze:
-        print("Analyzing resume...")
-        analysis_result = ResumeService.analyze_resume(parsed_data, target_role)
-        ats_score = analysis_result.get("ats_score", ats_score)
-    
+        print("Analyzing resume with AI...")
+        analysis_result = ResumeService.analyze_resume(
+            parsed_data, target_role, raw_text=extracted_text)
+        # Trust the AI's ATS score completely
+        ats_score = analysis_result.get("ats_score")
+        print(f"✅ AI determined ATS score: {ats_score}/100")
+
+    # Only calculate manually if no analysis was done
+    if ats_score is None:
+        print("⚠️ No AI analysis, calculating basic ATS score...")
+        ats_score = ResumeService._calculate_ats_score(parsed_data)
+
     # Upload file to Supabase Storage
     print("Uploading to Supabase Storage...")
     try:
@@ -96,7 +152,7 @@ async def upload_resume(
         print(f"❌ Storage upload failed: {e}")
         # Fallback to local path if storage fails
         file_url = f"/storage/resumes/{current_user.id}/{uuid.uuid4()}.{file_ext}"
-    
+
     # Create resume record
     resume = Resume(
         user_id=current_user.id,
@@ -110,19 +166,19 @@ async def upload_resume(
         analysis_result=analysis_result,
         raw_text=extracted_text
     )
-    
+
     # If setting as primary, unset others
     if is_primary:
-        db.query(Resume).filter(Resume.user_id == current_user.id).update({"is_primary": False})
-    
+        db.query(Resume).filter(Resume.user_id ==
+                                current_user.id).update({"is_primary": False})
+
     db.add(resume)
     db.commit()
     db.refresh(resume)
-    
-    print(f"✅ Resume saved to database: {resume.id}")
-    
-    return resume
 
+    print(f"✅ Resume saved to database: {resume.id}")
+
+    return resume
 
 
 @router.get("/list", response_model=List[ResumeListItem])
@@ -159,28 +215,34 @@ async def analyze_resume(
 ):
     """
     Re-analyze an existing resume with optional target role
-    
+
     Useful for:
     - Getting analysis for different roles
     - Updating analysis with new AI model
     - Re-evaluating after edits
     """
     resume = ResumeService.get_resume(db, resume_id, current_user.id)
-    
+
     if not resume.parsed_data:
         raise BadRequestException("Resume has not been parsed yet")
-    
+
     print(f"Re-analyzing resume {resume_id}...")
-    analysis = ResumeService.analyze_resume(resume.parsed_data, target_role)
-    
-    # Update resume
+    analysis = ResumeService.analyze_resume(
+        resume.parsed_data,
+        target_role,
+        raw_text=resume.raw_text  # Pass the full raw text for better AI analysis
+    )
+
+    # Update resume - trust AI's ATS score completely
     resume.analysis_result = analysis
-    resume.ats_score = analysis.get("ats_score", resume.ats_score)
+    resume.ats_score = analysis.get("ats_score")  # Use AI score directly
     resume.updated_at = datetime.utcnow()
-    
+
+    print(f"✅ Re-analysis complete. New ATS score: {resume.ats_score}/100")
+
     db.commit()
     db.refresh(resume)
-    
+
     return resume
 
 
@@ -192,14 +254,14 @@ async def set_primary_resume(
 ):
     """
     Set a resume as primary
-    
+
     Primary resume is used for:
     - Interview preparation
     - Skill analysis
     - Career recommendations
     """
     ResumeService.set_primary_resume(db, resume_id, current_user.id)
-    
+
     return ResponseBase(
         success=True,
         message="Resume set as primary"
@@ -214,18 +276,18 @@ async def delete_resume(
 ):
     """Delete a resume"""
     resume = ResumeService.get_resume(db, resume_id, current_user.id)
-    
+
     # Delete file from storage
     try:
         storage_service.delete_resume(resume.file_url)
         print(f"✅ File deleted from storage: {resume.file_url}")
     except Exception as e:
         print(f"⚠️ Failed to delete file from storage: {e}")
-    
+
     # Delete from database
     db.delete(resume)
     db.commit()
-    
+
     return ResponseBase(
         success=True,
         message="Resume deleted successfully"
@@ -242,7 +304,7 @@ async def download_resume(
     Get download URL for resume
     """
     resume = ResumeService.get_resume(db, resume_id, current_user.id)
-    
+
     return {
         "resume_id": str(resume.id),
         "file_name": resume.file_name,
@@ -259,7 +321,7 @@ async def get_resume_analysis(
 ):
     """
     Get detailed analysis of a resume
-    
+
     Returns comprehensive feedback including:
     - ATS score
     - Strengths and weaknesses
@@ -268,10 +330,10 @@ async def get_resume_analysis(
     - Recommendations
     """
     resume = ResumeService.get_resume(db, resume_id, current_user.id)
-    
+
     if not resume.analysis_result:
         raise BadRequestException("Resume has not been analyzed yet")
-    
+
     return {
         "resume_id": str(resume.id),
         "file_name": resume.file_name,
@@ -281,15 +343,15 @@ async def get_resume_analysis(
     }
 
 
-
-from pydantic import BaseModel
-
 # Add this schema near the top
+
 class JobComparisonRequest(BaseModel):
     job_description: str
     job_title: str
 
 # Update the compare endpoint
+
+
 @router.post("/{resume_id}/compare", response_model=dict)
 async def compare_with_job_description(
     resume_id: uuid.UUID,
@@ -298,19 +360,19 @@ async def compare_with_job_description(
     db: Session = Depends(get_db)
 ):
     """Compare resume with a job description"""
-    
+
     resume = ResumeService.get_resume(db, resume_id, current_user.id)
-    
+
     if not resume.parsed_data:
         raise BadRequestException("Resume has not been parsed yet")
-    
+
     import google.generativeai as genai
     import json
     from app.config import settings
-    
+
     genai.configure(api_key=settings.GOOGLE_API_KEY)
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    
+    model = genai.GenerativeModel('gemini-2.5-flash')
+
     prompt = f"""Compare this resume with the job description and provide match analysis.
 
 Resume Data:
@@ -335,11 +397,11 @@ Provide analysis in JSON:
 }}
 
 Return ONLY valid JSON."""
-    
+
     try:
         response = model.generate_content(prompt)
         content = response.text.strip()
-        
+
         # Remove surrounding triple backticks and optional language markers (e.g. ```json\n ... ```).
         # Use regex to safely strip leading/trailing fences and any optional language token.
         import re
@@ -348,15 +410,16 @@ Return ONLY valid JSON."""
         # Strip trailing fences like ``` optionally followed by whitespace/newline
         content = re.sub(r'\n?```\s*$', '', content)
         content = content.strip()
-        
+
         comparison = json.loads(content)
-        
+
         return {
             "resume_id": str(resume.id),
             "job_title": request.job_title,
             "comparison": comparison
         }
-        
+
     except Exception as e:
         print(f"Comparison error: {e}")
-        raise BadRequestException("Failed to compare resume with job description")
+        raise BadRequestException(
+            "Failed to compare resume with job description")

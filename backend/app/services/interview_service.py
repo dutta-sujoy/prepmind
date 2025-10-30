@@ -27,7 +27,7 @@ class InterviewService:
         """Generate interview questions using Gemini AI"""
         
         # Initialize Gemini model
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         # Create prompt
         prompt = f"""Generate {num_questions} {interview_type} interview questions for a {target_role} position.

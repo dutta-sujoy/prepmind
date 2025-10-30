@@ -46,11 +46,14 @@ class ResumeAnalysis(BaseModel):
     
     strengths: List[str]
     weaknesses: List[str]
-    missing_sections: List[str]
+    suggestions: List[str] = []
+    keywords: List[str] = []
+    missing_sections: List[str] = []
     
     skills_analysis: Dict[str, Any]
     experience_analysis: Dict[str, Any]
     education_analysis: Dict[str, Any]
+    content_quality: Optional[Dict[str, Any]] = None
     
     recommendations: List[str]
     keyword_match: Dict[str, Any]

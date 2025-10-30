@@ -2,23 +2,24 @@
 .resume-content {
     min-height: 100vh;
     background: var(--surface);
-    padding: 3rem 2rem;
+    padding: 1.5rem 1rem;
 }
 
 /* Inline Back Button */
 .back-button-inline {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
     background: white;
     border: 1px solid var(--border-color);
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
     color: var(--text-primary);
     font-weight: 600;
+    font-size: 0.875rem;
     cursor: pointer;
     transition: all 0.2s;
-    margin-bottom: 2rem;
+    margin-bottom: 1.25rem;
 }
 
 .back-button-inline:hover {
@@ -32,22 +33,22 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 3rem;
+    margin-bottom: 1.25rem;
     background: white;
-    padding: 2rem;
-    border-radius: 1rem;
+    padding: 1rem 1.25rem;
+    border-radius: 0.65rem;
     box-shadow: var(--shadow-sm);
 }
 
 .page-title h1 {
-    font-size: 2.25rem;
-    font-weight: 800;
+    font-size: 1.4rem;
+    font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
 }
 
 .page-title p {
-    font-size: 1rem;
+    font-size: 0.875rem;
     color: var(--text-secondary);
 }
 
@@ -132,41 +133,42 @@
 /* Empty State */
 .empty-state {
     text-align: center;
-    padding: 6rem 2rem;
+    padding: 2.5rem 1.5rem;
     background: white;
-    border-radius: 1.5rem;
-    box-shadow: var(--shadow-md);
+    border-radius: 0.65rem;
+    box-shadow: var(--shadow-sm);
 }
 
 .empty-state h3 {
-    font-size: 1.75rem;
+    font-size: 1.2rem;
     font-weight: 700;
     color: var(--text-primary);
-    margin-top: 1.5rem;
-    margin-bottom: 0.75rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
 }
 
 .empty-state p {
     color: var(--text-secondary);
-    font-size: 1.125rem;
-    margin-bottom: 2rem;
+    font-size: 0.875rem;
+    margin-bottom: 1.25rem;
 }
 
 /* Resume Cards Grid */
 .resumes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
 }
 
 .resume-card {
     background: white;
-    border: 2px solid var(--border-color);
-    border-radius: 1.25rem;
-    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.65rem;
+    padding: 1rem;
+    padding-top: 1.5rem;
     transition: all 0.3s ease;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .resume-card:hover {
@@ -183,18 +185,22 @@
 /* Primary Badge */
 .primary-badge {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
+    top: -0.65rem;
+    right: -0.5rem;
     background: #fbbf24;
-    color: #000;
-    padding: 0.375rem 0.75rem;
-    border-radius: 1rem;
-    font-size: 0.75rem;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.75rem;
+    font-size: 0.65rem;
     font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 0.375rem;
+    justify-content: center;
+    gap: 0.25rem;
     z-index: 2;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
 }
 
 /* Resume Card Header */
@@ -202,14 +208,14 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.85rem;
 }
 
 .file-icon {
     background: linear-gradient(135deg, #e0f2fe 0%, #ede9fe 100%);
-    width: 56px;
-    height: 56px;
-    border-radius: 1rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 0.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -274,14 +280,14 @@
 
 /* Resume Card Body */
 .resume-card-body {
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.85rem;
 }
 
 .resume-name {
-    font-size: 1.125rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -290,38 +296,38 @@
 .resume-meta {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+    gap: 0.65rem;
+    margin-bottom: 0.85rem;
 }
 
 .file-type {
     background: var(--surface);
     color: var(--text-secondary);
-    padding: 0.25rem 0.75rem;
-    border-radius: 0.5rem;
-    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.35rem;
+    font-size: 0.7rem;
     font-weight: 600;
 }
 
 .upload-date {
     color: var(--text-secondary);
-    font-size: 0.875rem;
+    font-size: 0.75rem;
 }
 
 /* ATS Score in Card */
 .ats-score-container {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 1rem;
+    gap: 0.65rem;
+    padding: 0.65rem;
     background: var(--surface);
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
 }
 
 .score-circle {
-    width: 60px;
-    height: 60px;
-    border: 4px solid;
+    width: 46px;
+    height: 46px;
+    border: 3px solid;
     border-radius: 50%;
     display: flex;
     flex-direction: column;
@@ -330,27 +336,27 @@
 }
 
 .score-value {
-    font-size: 1.5rem;
+    font-size: 1.15rem;
     font-weight: 800;
     line-height: 1;
 }
 
 .score-label {
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     color: var(--text-secondary);
     font-weight: 600;
 }
 
 .score-status span {
     display: block;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--text-primary);
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.15rem;
 }
 
 .score-desc {
-    font-size: 0.8125rem;
+    font-size: 0.7rem;
     color: var(--text-secondary);
     margin: 0;
 }
@@ -358,23 +364,24 @@
 .no-analysis {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 1rem;
+    gap: 0.5rem;
+    padding: 0.65rem;
     background: var(--surface);
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
     color: var(--text-secondary);
+    font-size: 0.8rem;
 }
 
 /* Resume Card Footer */
 .resume-card-footer {
     display: flex;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
 .btn-small {
     flex: 1;
-    padding: 0.625rem 1rem;
-    font-size: 0.9375rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
 }
 
 /* Responsive */
@@ -425,53 +432,53 @@
 }
 
 .upload-container {
-    max-width: 800px;
+    max-width: 600px;
     width: 100%;
 }
 
 .upload-header {
     text-align: center;
-    margin-bottom: 3rem;
+    margin-bottom: 1.5rem;
 }
 
 .upload-header h1 {
-    font-size: 3rem;
-    font-weight: 800;
+    font-size: 1.75rem;
+    font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
 }
 
 .upload-header p {
-    font-size: 1.25rem;
+    font-size: 0.9rem;
     color: var(--text-secondary);
 }
 
 .upload-form {
     background: white;
-    padding: 3rem;
-    border-radius: 1.5rem;
-    box-shadow: var(--shadow-lg);
-    margin-bottom: 3rem;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 2rem;
 }
 
 .target-role-input {
-    margin-bottom: 2rem;
+    margin-bottom: 1.25rem;
 }
 
 .target-role-input label {
     display: block;
     font-weight: 600;
     color: var(--text-primary);
-    margin-bottom: 0.5rem;
-    font-size: 0.875rem;
+    margin-bottom: 0.4rem;
+    font-size: 0.8rem;
 }
 
 .target-role-input input {
     width: 100%;
-    padding: 0.875rem 1rem;
-    border: 2px solid var(--border-color);
+    padding: 0.6rem 0.85rem;
+    border: 1.5px solid var(--border-color);
     border-radius: 0.5rem;
-    font-size: 1rem;
+    font-size: 0.875rem;
     color: var(--text-primary);
     transition: border-color 0.2s;
 }
@@ -482,9 +489,9 @@
 }
 
 .upload-dropzone {
-    border: 3px dashed var(--border-color);
-    border-radius: 1rem;
-    padding: 4rem 2rem;
+    border: 2px dashed var(--border-color);
+    border-radius: 0.65rem;
+    padding: 2rem 1.5rem;
     text-align: center;
     cursor: pointer;
     transition: all 0.3s;
@@ -498,42 +505,43 @@
 
 .dropzone-icon {
     color: var(--primary-color);
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     display: flex;
     justify-content: center;
 }
 
 .upload-dropzone h3 {
-    font-size: 1.5rem;
+    font-size: 1.05rem;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
 }
 
 .upload-dropzone p {
     color: var(--text-secondary);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
+    font-size: 0.875rem;
 }
 
 .file-info {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     color: var(--text-secondary);
 }
 
 .file-preview {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
 .file-info-card {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
-    padding: 1.5rem;
+    gap: 1rem;
+    padding: 1rem;
     background: var(--surface);
-    border-radius: 1rem;
-    border: 2px solid var(--border-color);
+    border-radius: 0.65rem;
+    border: 1.5px solid var(--border-color);
 }
 
 .file-details {
@@ -541,20 +549,20 @@
 }
 
 .file-details h4 {
-    font-size: 1.125rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-primary);
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.2rem;
 }
 
 .file-details p {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     color: var(--text-secondary);
 }
 
 .delete-btn {
-    width: 40px;
-    height: 40px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     border: none;
     background: var(--error);
@@ -641,7 +649,7 @@
 .features-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 2rem;
+    gap: 1rem;
 }
 
 .feature-item {
@@ -649,26 +657,26 @@
 }
 
 .feature-icon {
-    width: 64px;
-    height: 64px;
+    width: 44px;
+    height: 44px;
     background: linear-gradient(135deg, #e0f2fe 0%, #ede9fe 100%);
-    border-radius: 1rem;
+    border-radius: 0.6rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 1rem;
+    margin: 0 auto 0.6rem;
     color: var(--primary-color);
 }
 
 .feature-item h4 {
-    font-size: 1.125rem;
+    font-size: 0.9rem;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.3rem;
 }
 
 .feature-item p {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
 }
 
@@ -685,23 +693,23 @@
 
 .analysis-hero {
     background: white;
-    padding: 3rem;
-    border-radius: 1.5rem;
-    box-shadow: var(--shadow-lg);
-    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 1.25rem;
 }
 
 .score-showcase {
     display: flex;
     align-items: center;
-    gap: 4rem;
+    gap: 2rem;
     justify-content: center;
 }
 
 .score-circle-xl {
     position: relative;
-    width: 200px;
-    height: 200px;
+    width: 140px;
+    height: 140px;
 }
 
 .score-circle-xl svg {
@@ -720,14 +728,14 @@
 }
 
 .score-number {
-    font-size: 4rem;
+    font-size: 2.5rem;
     font-weight: 800;
     color: var(--text-primary);
     line-height: 1;
 }
 
 .score-label {
-    font-size: 1rem;
+    font-size: 0.8rem;
     color: var(--text-secondary);
     font-weight: 600;
 }
@@ -737,14 +745,14 @@
 }
 
 .score-status h2 {
-    font-size: 2.5rem;
-    font-weight: 800;
+    font-size: 1.5rem;
+    font-weight: 700;
     color: var(--text-primary);
-    margin: 1rem 0 0.5rem;
+    margin: 0.6rem 0 0.3rem;
 }
 
 .score-status p {
-    font-size: 1.25rem;
+    font-size: 0.9rem;
     color: var(--text-secondary);
 }
 
@@ -752,26 +760,26 @@
 .analysis-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
 }
 
 .analysis-card {
     background: white;
-    padding: 2rem;
-    border-radius: 1rem;
-    box-shadow: var(--shadow-md);
+    padding: 1.15rem;
+    border-radius: 0.65rem;
+    box-shadow: var(--shadow-sm);
 }
 
 .card-header {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
 }
 
 .card-header h3 {
-    font-size: 1.25rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: var(--text-primary);
 }
@@ -780,14 +788,15 @@
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.65rem;
 }
 
 .analysis-list li {
-    padding-left: 1.5rem;
+    padding-left: 1.25rem;
     position: relative;
     color: var(--text-secondary);
-    line-height: 1.6;
+    line-height: 1.45;
+    font-size: 0.8rem;
 }
 
 .strengths-card .analysis-list li::before {
@@ -817,15 +826,15 @@
 .keywords-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
 .keyword-badge {
-    padding: 0.5rem 1rem;
+    padding: 0.35rem 0.7rem;
     background: var(--primary-color);
     color: white;
-    border-radius: 2rem;
-    font-size: 0.875rem;
+    border-radius: 1.5rem;
+    font-size: 0.7rem;
     font-weight: 600;
 }
 
@@ -834,44 +843,44 @@
 }
 
 .missing-sections {
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
     border-top: 1px solid var(--border-color);
 }
 
 .missing-sections h4 {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 700;
     color: var(--text-secondary);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.6rem;
 }
 
 /* Detailed Scores */
 .detailed-scores {
     background: white;
-    padding: 2rem;
-    border-radius: 1rem;
-    box-shadow: var(--shadow-md);
-    margin-bottom: 2rem;
+    padding: 1.15rem;
+    border-radius: 0.65rem;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1.25rem;
 }
 
 .detailed-scores h3 {
-    font-size: 1.5rem;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 2rem;
+    margin-bottom: 1.15rem;
 }
 
 .scores-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 2rem;
+    gap: 1.15rem;
 }
 
 .score-metric {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
 .metric-header {
@@ -881,35 +890,35 @@
 }
 
 .metric-name {
-    font-size: 1rem;
+    font-size: 0.85rem;
     font-weight: 600;
     color: var(--text-primary);
 }
 
 .metric-value {
-    font-size: 1.25rem;
+    font-size: 0.95rem;
     font-weight: 800;
     color: var(--primary-color);
 }
 
 .metric-bar {
-    height: 12px;
+    height: 8px;
     background: var(--border-color);
-    border-radius: 6px;
+    border-radius: 4px;
     overflow: hidden;
 }
 
 .metric-fill {
     height: 100%;
     background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
-    border-radius: 6px;
+    border-radius: 4px;
     transition: width 0.5s;
 }
 
 .metric-desc {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
-    line-height: 1.6;
+    line-height: 1.4;
 }
 
 /* Action Buttons */

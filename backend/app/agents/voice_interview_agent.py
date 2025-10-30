@@ -32,7 +32,7 @@ class VoiceInterviewAgent:
         self.is_complete = False
         
         # Initialize Gemini
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.model = genai.GenerativeModel('gemini-2.5-flash')
         self.system_context = self._create_system_context()
     
     
