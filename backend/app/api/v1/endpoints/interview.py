@@ -157,8 +157,45 @@ async def get_interview_result(
     
     if not result:
         raise NotFoundException("Interview result not found")
-    
-    return result
+
+    # Coerce legacy rows to match API schema to avoid ResponseValidationError
+    overall_score = int(result.overall_score or 0)
+    summary = str(result.summary or "")
+
+    raw_df = result.detailed_feedback
+    if isinstance(raw_df, dict):
+        detailed_feedback = raw_df
+    elif isinstance(raw_df, str) and raw_df.strip():
+        detailed_feedback = {"overall": raw_df}
+    else:
+        detailed_feedback = {}
+
+    def ensure_str_list(val):
+        if not val:
+            return []
+        if isinstance(val, list):
+            return [str(x) for x in val]
+        return [str(val)]
+
+    improvement_areas = ensure_str_list(result.improvement_areas)
+    strengths = ensure_str_list(result.strengths)
+
+    transcript_val = result.transcript
+    transcript = transcript_val if isinstance(transcript_val, list) else []
+
+    response = InterviewResultResponse(
+        id=result.id,
+        interview_id=result.interview_id,
+        overall_score=overall_score,
+        summary=summary,
+        detailed_feedback=detailed_feedback,
+        improvement_areas=improvement_areas,
+        strengths=strengths,
+        transcript=transcript,
+        created_at=result.created_at
+    )
+
+    return response
 
 
 @router.get("/{interview_id}/transcript", response_model=dict)

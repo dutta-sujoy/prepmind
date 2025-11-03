@@ -86,6 +86,8 @@ networkx==3.5
 numba==0.62.1
 numpy==2.3.4
 openai-whisper==20250625
+SpeechRecognition==3.14.3
+vosk==0.3.45
 orjson==3.11.4
 ormsgpack==1.11.0
 packaging==25.0

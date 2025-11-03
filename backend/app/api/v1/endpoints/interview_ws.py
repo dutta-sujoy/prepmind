@@ -1,6 +1,6 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
 from sqlalchemy.orm import Session
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import json
 import uuid
 import base64
@@ -12,6 +12,7 @@ from app.models.interview import Interview, InterviewResult
 from app.core.security import decode_token
 from app.core.exceptions import AuthenticationException
 from app.agents.voice_interview_agent import VoiceInterviewAgent
+from app.agents.conversational_interview_agent import ConversationalInterviewAgent
 from app.services.interview_service import InterviewService
 
 router = APIRouter()
@@ -70,6 +71,7 @@ async def voice_interview_websocket(
     interview_id: str,
     token: str = Query(...),
     mode: str = Query("voice"),  # "voice" or "text"
+    style: str = Query("conversational"),  # "conversational" or "structured"
     db: Session = Depends(get_db)
 ):
     """
@@ -98,9 +100,16 @@ async def voice_interview_websocket(
     
     connection_id = f"{interview_id}_{uuid.uuid4()}"
     
+    # Accept connection first (required for proper error handling)
+    await websocket.accept()
+    
     try:
-        # Authenticate
-        user = await get_current_user_ws(token, db)
+        # Authenticate after accepting connection
+        try:
+            user = await get_current_user_ws(token, db)
+        except Exception as e:
+            await websocket.close(code=4001, reason=f"Authentication failed: {str(e)}")
+            return
         
         # Get interview
         interview = db.query(Interview).filter(
@@ -116,8 +125,8 @@ async def voice_interview_websocket(
             await websocket.close(code=4000, reason="Interview already completed")
             return
         
-        # Accept connection
-        await manager.connect(websocket, connection_id)
+        # Add to connection manager
+        manager.active_connections[connection_id] = websocket
         
         # Update interview status
         if interview.status == "draft":
@@ -128,24 +137,63 @@ async def voice_interview_websocket(
         # Get resume
         resume_data = InterviewService.get_user_resume(db, user.id)
         
-        # Initialize Voice AI Agent
-        agent = VoiceInterviewAgent(
-            interview_type=interview.interview_type,
-            target_role=interview.target_role,
-            questions=interview.questions,
-            resume_data=resume_data
-        )
-        
-        # Send welcome message
-        await manager.send_json(connection_id, {
-            "type": "welcome",
-            "message": f"Welcome to your {interview.interview_type} interview for {interview.target_role}",
-            "mode": mode,
-            "total_questions": agent.total_questions
-        })
-        
-        # Send first question
-        await send_next_question(connection_id, agent, mode)
+        # Initialize appropriate agent based on style
+        if style == "conversational":
+            agent = ConversationalInterviewAgent(
+                interview_type=interview.interview_type,
+                target_role=interview.target_role,
+                technologies=interview.technologies,
+                difficulty=interview.difficulty,
+                resume_data=resume_data
+            )
+            
+            # Get initial greeting
+            initial_message = await agent.get_initial_message()
+            
+            # Send welcome with initial greeting
+            await manager.send_json(connection_id, {
+                "type": "welcome",
+                "style": "conversational",
+                "mode": mode
+            })
+            
+            # Send AI's initial message
+            await manager.send_json(connection_id, {
+                "type": "ai_message",
+                "message": initial_message["message"],
+                "topic": initial_message.get("topic")
+            })
+            
+            # Generate and send audio if voice mode
+            if mode == "voice":
+                audio_data = agent.get_question_audio(initial_message["message"])
+                if audio_data:
+                    audio_base64 = base64.b64encode(audio_data).decode('utf-8')
+                    await manager.send_json(connection_id, {
+                        "type": "ai_audio",
+                        "data": audio_base64,
+                        "format": "mp3"
+                    })
+        else:
+            # Original structured mode
+            agent = VoiceInterviewAgent(
+                interview_type=interview.interview_type,
+                target_role=interview.target_role,
+                questions=interview.questions,
+                resume_data=resume_data
+            )
+            
+            # Send welcome message
+            await manager.send_json(connection_id, {
+                "type": "welcome",
+                "message": f"Welcome to your {interview.interview_type} interview for {interview.target_role}",
+                "style": "structured",
+                "mode": mode,
+                "total_questions": agent.total_questions
+            })
+            
+            # Send first question
+            await send_next_question(connection_id, agent, mode)
         
         # Audio buffer for voice mode
         audio_buffer = bytearray()
@@ -169,10 +217,30 @@ async def voice_interview_websocket(
                 elif msg_type == "audio_complete":
                     # Voice mode: process complete audio
                     if mode == "voice" and audio_buffer:
-                        await process_voice_answer(
-                            connection_id, agent, bytes(audio_buffer), db, interview, user
-                        )
+                        if style == "conversational":
+                            await process_conversational_voice(
+                                connection_id, agent, bytes(audio_buffer), mode, db, interview, user
+                            )
+                        else:
+                            await process_voice_answer(
+                                connection_id, agent, bytes(audio_buffer), db, interview, user
+                            )
                         audio_buffer.clear()
+                
+                elif msg_type == "user_message":
+                    # Conversational mode: process user's message
+                    if style == "conversational":
+                        message_text = data.get("message", "")
+                        if not message_text:
+                            await manager.send_json(connection_id, {
+                                "type": "error",
+                                "message": "Message cannot be empty"
+                            })
+                            continue
+                        
+                        await process_conversational_message(
+                            connection_id, agent, message_text, mode, db, interview, user
+                        )
                 
                 elif msg_type == "answer":
                     # Text mode: process text answer
@@ -195,8 +263,17 @@ async def voice_interview_websocket(
                     await manager.send_json(connection_id, {"type": "pong"})
                 
                 elif msg_type == "end_interview":
-                    interview.status = "abandoned"
-                    db.commit()
+                    # User or system wants to end the interview
+                    # Generate report and complete properly (not abandon)
+                    if style == "conversational":
+                        await complete_conversational_interview(
+                            connection_id, agent, db, interview, user
+                        )
+                    else:
+                        # For structured mode
+                        interview.status = "completed"
+                        interview.completed_at = datetime.utcnow()
+                        db.commit()
                     break
             
             elif "bytes" in message:
@@ -219,6 +296,187 @@ async def voice_interview_websocket(
     
     finally:
         manager.disconnect(connection_id)
+
+
+async def process_conversational_voice(
+    connection_id: str,
+    agent: ConversationalInterviewAgent,
+    audio_data: bytes,
+    mode: str,
+    db: Session,
+    interview: Interview,
+    user: User
+):
+    """Process voice input in conversational mode"""
+    
+    # Send processing message
+    await manager.send_json(connection_id, {
+        "type": "processing",
+        "message": "Transcribing..."
+    })
+    
+    # Transcribe audio
+    transcription_result = await agent.transcribe_answer(audio_data)
+    
+    if transcription_result.get("error"):
+        await manager.send_json(connection_id, {
+            "type": "error",
+            "message": f"Transcription failed: {transcription_result['error']}"
+        })
+        return
+    
+    transcript = transcription_result["transcript"]
+    voice_analysis = transcription_result.get("voice_analysis")
+    
+    # Send transcription to client
+    await manager.send_json(connection_id, {
+        "type": "transcription",
+        "text": transcript
+    })
+    
+    # Process with conversational AI
+    await process_conversational_message(
+        connection_id, agent, transcript, mode, db, interview, user, voice_analysis
+    )
+
+
+async def process_conversational_message(
+    connection_id: str,
+    agent: ConversationalInterviewAgent,
+    message: str,
+    mode: str,
+    db: Optional[Session] = None,
+    interview: Optional[Interview] = None,
+    user: Optional[User] = None,
+    voice_analysis: Optional[Dict[str, Any]] = None
+):
+    """Process user message and generate AI response in conversational mode"""
+    
+    # Send thinking message
+    await manager.send_json(connection_id, {
+        "type": "thinking",
+        "message": "Thinking..."
+    })
+    
+    # Get AI's response
+    ai_response = await agent.process_candidate_response(message, voice_analysis)
+    
+    # Send AI's message
+    await manager.send_json(connection_id, {
+        "type": "ai_message",
+        "message": ai_response["message"],
+        "topic": ai_response.get("topic"),
+        "is_complete": ai_response.get("is_complete", False)
+    })
+    
+    # If interview is complete, generate report
+    if ai_response.get("is_complete") and db and interview and user:
+        await complete_conversational_interview(
+            connection_id, agent, db, interview, user
+        )
+    else:
+        # Generate and send audio for AI's message
+        if mode == "voice":
+            await manager.send_json(connection_id, {
+                "type": "generating_audio"
+            })
+            
+            audio_data = agent.get_question_audio(ai_response["message"])
+            if audio_data:
+                audio_base64 = base64.b64encode(audio_data).decode('utf-8')
+                await manager.send_json(connection_id, {
+                    "type": "ai_audio",
+                    "data": audio_base64,
+                    "format": "mp3"
+                })
+
+
+async def complete_conversational_interview(
+    connection_id: str,
+    agent: ConversationalInterviewAgent,
+    db: Session,
+    interview: Interview,
+    user: User
+):
+    """Complete conversational interview and generate report"""
+    
+    await manager.send_json(connection_id, {
+        "type": "generating_report",
+        "message": "Generating your interview report..."
+    })
+    
+    # Generate final report
+    final_report = await agent.generate_final_report()
+
+    # Coerce fields to match schema expectations (avoid ResponseValidationError)
+    overall_score = int(final_report.get("overall_score", 0))
+    summary = str(final_report.get("summary", ""))
+
+    detailed_feedback_raw = final_report.get("detailed_feedback")
+    # detailed_feedback must be a dict per schema
+    if isinstance(detailed_feedback_raw, dict):
+        detailed_feedback = detailed_feedback_raw
+    elif isinstance(detailed_feedback_raw, str):
+        detailed_feedback = {"overall": detailed_feedback_raw}
+    else:
+        detailed_feedback = {}
+
+    improvement_areas_raw = final_report.get("improvement_areas", [])
+    if not isinstance(improvement_areas_raw, list):
+        improvement_areas = [str(improvement_areas_raw)] if improvement_areas_raw else []
+    else:
+        improvement_areas = [str(x) for x in improvement_areas_raw]
+
+    strengths_raw = final_report.get("strengths", [])
+    if not isinstance(strengths_raw, list):
+        strengths = [str(strengths_raw)] if strengths_raw else []
+    else:
+        strengths = [str(x) for x in strengths_raw]
+
+    # Ensure transcript is a list of dicts
+    transcript_val = final_report.get("transcript")
+    if isinstance(transcript_val, list):
+        transcript_data = transcript_val
+    else:
+        transcript_data = agent.conversation_history
+    
+    # Save to database
+    interview_result = InterviewResult(
+        interview_id=interview.id,
+        user_id=user.id,
+        overall_score=overall_score,
+        summary=summary,
+        detailed_feedback=detailed_feedback,
+        improvement_areas=improvement_areas,
+        strengths=strengths,
+        transcript=transcript_data,
+        voice_analysis=None,
+        ai_remarks=str(final_report.get("next_steps", ""))
+    )
+    db.add(interview_result)
+    
+    # Update interview
+    interview.status = "completed"
+    interview.completed_at = datetime.utcnow()
+    if interview.started_at:
+        interview.duration_seconds = int((datetime.utcnow() - interview.started_at).total_seconds())
+    
+    db.commit()
+    
+    # Send complete message
+    await manager.send_json(connection_id, {
+        "type": "interview_complete",
+        "overall_score": overall_score,
+        "summary": summary,
+        "detailed_feedback": detailed_feedback,
+        "strengths": strengths,
+        "improvement_areas": improvement_areas,
+        "category_scores": final_report.get("category_scores"),
+        "key_highlights": final_report.get("key_highlights"),
+        "recommendation": final_report.get("recommendation"),
+        "next_steps": final_report.get("next_steps"),
+        "message": "Interview completed successfully!"
+    })
 
 
 async def send_next_question(connection_id: str, agent: VoiceInterviewAgent, mode: str):
