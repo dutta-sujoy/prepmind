@@ -16,6 +16,7 @@ import {
   MoreVertical,
   RefreshCw,
   Plus,
+  ChevronRight,
 } from 'lucide-react';
 import { resumeAPI } from '../services/api';
 import './ResumeAnalyzerPage.css';
@@ -74,11 +75,24 @@ interface ResumeAnalysis {
   };
 }
 
+interface JobComparison {
+  match_percentage: number;
+  matched_keywords: string[];
+  missing_keywords: string[];
+  matched_skills: string[];
+  missing_skills: string[];
+  experience_match: string;
+  education_match: string;
+  recommendations: string[];
+  tailoring_suggestions: string[];
+  summary: string;
+}
+
 const ResumeAnalyzerPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // State management
-  const [view, setView] = useState<'dashboard' | 'upload' | 'analysis'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'upload' | 'analysis' | 'comparison' | 'selectResume'>('dashboard');
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
@@ -89,6 +103,12 @@ const ResumeAnalyzerPage = () => {
   const [targetRole, setTargetRole] = useState('Software Engineer');
   const [error, setError] = useState('');
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  
+  // Job comparison state
+  const [jobTitle, setJobTitle] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
+  const [comparison, setComparison] = useState<JobComparison | null>(null);
+  const [loadingComparison, setLoadingComparison] = useState(false);
 
   // Load all resumes
   useEffect(() => {
@@ -246,6 +266,51 @@ const ResumeAnalyzerPage = () => {
     }
   };
 
+  const handleStartComparison = (resumeId: string) => {
+    setSelectedResumeId(resumeId);
+    setJobTitle('');
+    setJobDescription('');
+    setComparison(null);
+    setError('');
+    setView('comparison');
+    setActiveMenu(null);
+  };
+
+  const handleCompareFromDashboard = () => {
+    setJobTitle('');
+    setJobDescription('');
+    setComparison(null);
+    setSelectedResumeId(null);
+    setError('');
+    setView('selectResume');
+  };
+
+  const handleSelectResumeForComparison = (resumeId: string) => {
+    setSelectedResumeId(resumeId);
+    setView('comparison');
+  };
+
+  const handleCompareWithJob = async () => {
+    if (!selectedResumeId || !jobTitle.trim() || !jobDescription.trim()) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    setLoadingComparison(true);
+    setError('');
+
+    try {
+      const response = await resumeAPI.compareWithJob(selectedResumeId, jobDescription, jobTitle);
+      console.log('Comparison response:', response.data);
+      setComparison(response.data.comparison);
+    } catch (err: any) {
+      console.error('Error comparing with job:', err);
+      setError(err.response?.data?.detail || 'Failed to compare with job description');
+    } finally {
+      setLoadingComparison(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -282,6 +347,10 @@ const ResumeAnalyzerPage = () => {
           <button className="btn btn-secondary" onClick={loadResumes} disabled={loading}>
             <RefreshCw size={18} />
             Refresh
+          </button>
+          <button className="btn btn-secondary" onClick={handleCompareFromDashboard}>
+            <Target size={20} />
+            Compare with Job
           </button>
           <button className="btn btn-primary" onClick={() => setView('upload')}>
             <Plus size={20} />
@@ -345,6 +414,10 @@ const ResumeAnalyzerPage = () => {
                           View Analysis
                         </button>
                       )}
+                      <button onClick={() => handleStartComparison(resume.id)}>
+                        <Target size={16} />
+                        Compare with Job
+                      </button>
                       <button onClick={() => handleReanalyze(resume.id)}>
                         <RefreshCw size={16} />
                         Re-analyze
@@ -757,8 +830,297 @@ const ResumeAnalyzerPage = () => {
               <button className="btn btn-primary btn-large" onClick={() => setView('dashboard')}>
                 Back to Resumes
               </button>
+              <button className="btn btn-primary btn-large" onClick={() => setView('comparison')}>
+                Compare with Job
+                <Target size={20} />
+              </button>
             </div>
           </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render Resume Selection for Comparison
+  const renderSelectResume = () => {
+    return (
+      <div className="resume-content">
+        <div className="select-resume-container">
+          <button className="back-button-inline" onClick={() => setView('dashboard')}>
+            <ArrowLeft size={20} />
+            Back to Dashboard
+          </button>
+
+          <div className="select-resume-header">
+            <Target size={32} color="#3b82f6" />
+            <h1>Select Resume to Compare</h1>
+            <p>Choose a resume to compare with a job description</p>
+          </div>
+
+          {error && (
+            <div className="error-message">
+              <AlertCircle size={20} />
+              {error}
+            </div>
+          )}
+
+          {resumes.length === 0 ? (
+            <div className="empty-state">
+              <FileText size={48} color="#94a3b8" />
+              <h3>No Resumes Yet</h3>
+              <p>Upload a resume first to compare with job descriptions</p>
+              <button className="btn btn-primary btn-large" onClick={() => setView('upload')}>
+                <Upload size={20} />
+                Upload Resume
+              </button>
+            </div>
+          ) : (
+            <div className="resume-selection-grid">
+              {resumes.map((resume) => (
+                <div
+                  key={resume.id}
+                  className="resume-selection-card"
+                  onClick={() => handleSelectResumeForComparison(resume.id)}
+                >
+                  <div className="resume-selection-icon">
+                    <FileText size={32} color="#3b82f6" />
+                  </div>
+                  <div className="resume-selection-info">
+                    <h3>{resume.file_name}</h3>
+                    <div className="resume-selection-meta">
+                      <span className="file-type">{resume.file_type.toUpperCase()}</span>
+                      <span className="upload-date">{formatDate(resume.created_at)}</span>
+                    </div>
+                    {resume.ats_score !== null && (
+                      <div className="resume-selection-score">
+                        <span className="score-badge" style={{ background: getScoreColor(resume.ats_score) }}>
+                          ATS Score: {resume.ats_score}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="resume-selection-action">
+                    <ChevronRight size={24} color="#3b82f6" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Render Job Comparison
+  const renderComparison = () => {
+    return (
+      <div className="resume-content">
+        <div className="comparison-container">
+          <button className="back-button-inline" onClick={() => setView('selectResume')}>
+            <ArrowLeft size={20} />
+            Back to Resume Selection
+          </button>
+
+          <div className="comparison-header">
+            <Target size={32} color="#3b82f6" />
+            <h1>Compare Resume with Job Description</h1>
+            <p>See how well your resume matches the job requirements</p>
+          </div>
+
+          {error && (
+            <div className="error-message">
+              <AlertCircle size={20} />
+              {error}
+            </div>
+          )}
+
+          {!comparison ? (
+            <div className="comparison-form">
+              <div className="form-group">
+                <label htmlFor="jobTitle">Job Title</label>
+                <input
+                  id="jobTitle"
+                  type="text"
+                  placeholder="e.g., Senior Software Engineer"
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="jobDescription">Job Description</label>
+                <textarea
+                  id="jobDescription"
+                  placeholder="Paste the full job description here..."
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  rows={12}
+                  className="form-textarea"
+                />
+              </div>
+
+              <button
+                className="btn btn-primary btn-large"
+                onClick={handleCompareWithJob}
+                disabled={loadingComparison || !jobTitle.trim() || !jobDescription.trim()}
+              >
+                {loadingComparison ? (
+                  <>
+                    <RefreshCw size={20} className="spinning" />
+                    Analyzing Match...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={20} />
+                    Compare Resume
+                  </>
+                )}
+              </button>
+            </div>
+          ) : (
+            <div className="comparison-results">
+              <div className="match-score-hero">
+                <div className="score-circle-xl">
+                  <svg viewBox="0 0 200 200">
+                    <circle cx="100" cy="100" r="90" fill="none" stroke="#e2e8f0" strokeWidth="20" />
+                    <circle
+                      cx="100"
+                      cy="100"
+                      r="90"
+                      fill="none"
+                      stroke={getScoreColor(comparison.match_percentage)}
+                      strokeWidth="20"
+                      strokeDasharray="565.5"
+                      strokeDashoffset={565.5 - (565.5 * comparison.match_percentage) / 100}
+                      strokeLinecap="round"
+                      transform="rotate(-90 100 100)"
+                    />
+                  </svg>
+                  <div className="score-text">
+                    <span className="score-number">{comparison.match_percentage}%</span>
+                    <span className="score-label">Match Score</span>
+                  </div>
+                </div>
+                <div className="match-summary">
+                  <h2>{jobTitle}</h2>
+                  <p>{comparison.summary}</p>
+                </div>
+              </div>
+
+              <div className="comparison-grid">
+                <div className="analysis-card">
+                  <div className="card-header">
+                    <CheckCircle size={18} color="#10b981" />
+                    <h3>Matched Skills</h3>
+                  </div>
+                  <div className="skills-list">
+                    {comparison.matched_skills.map((skill, idx) => (
+                      <span key={idx} className="skill-badge matched">{skill}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="analysis-card">
+                  <div className="card-header">
+                    <AlertCircle size={18} color="#f59e0b" />
+                    <h3>Missing Skills</h3>
+                  </div>
+                  <div className="skills-list">
+                    {comparison.missing_skills.map((skill, idx) => (
+                      <span key={idx} className="skill-badge missing">{skill}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="analysis-card">
+                  <div className="card-header">
+                    <CheckCircle size={18} color="#10b981" />
+                    <h3>Matched Keywords</h3>
+                  </div>
+                  <div className="keywords-grid">
+                    {comparison.matched_keywords.map((keyword, idx) => (
+                      <span key={idx} className="keyword-badge">{keyword}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="analysis-card">
+                  <div className="card-header">
+                    <AlertCircle size={18} color="#ef4444" />
+                    <h3>Missing Keywords</h3>
+                  </div>
+                  <div className="keywords-grid">
+                    {comparison.missing_keywords.map((keyword, idx) => (
+                      <span key={idx} className="keyword-badge missing">{keyword}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="analysis-card full-width">
+                  <div className="card-header">
+                    <TrendingUp size={18} color="#3b82f6" />
+                    <h3>Experience & Education Match</h3>
+                  </div>
+                  <div className="match-indicators">
+                    <div className="match-indicator">
+                      <span className="indicator-label">Experience Match</span>
+                      <span className={`indicator-badge ${comparison.experience_match}`}>
+                        {comparison.experience_match}
+                      </span>
+                    </div>
+                    <div className="match-indicator">
+                      <span className="indicator-label">Education Match</span>
+                      <span className={`indicator-badge ${comparison.education_match}`}>
+                        {comparison.education_match}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="analysis-card full-width">
+                  <div className="card-header">
+                    <Sparkles size={18} color="#8b5cf6" />
+                    <h3>Recommendations</h3>
+                  </div>
+                  <ul className="analysis-list">
+                    {comparison.recommendations.map((rec, idx) => (
+                      <li key={idx}>{rec}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="analysis-card full-width">
+                  <div className="card-header">
+                    <Target size={18} color="#3b82f6" />
+                    <h3>Resume Tailoring Suggestions</h3>
+                  </div>
+                  <ul className="analysis-list">
+                    {comparison.tailoring_suggestions.map((suggestion, idx) => (
+                      <li key={idx}>{suggestion}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="action-buttons">
+                <button
+                  className="btn btn-secondary btn-large"
+                  onClick={() => {
+                    setComparison(null);
+                    setJobTitle('');
+                    setJobDescription('');
+                  }}
+                >
+                  <Plus size={20} />
+                  Compare with Another Job
+                </button>
+                <button className="btn btn-primary btn-large" onClick={() => setView('dashboard')}>
+                  Back to Resumes
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -770,6 +1132,8 @@ const ResumeAnalyzerPage = () => {
       {view === 'dashboard' && renderDashboard()}
       {view === 'upload' && renderUpload()}
       {view === 'analysis' && renderAnalysis()}
+      {view === 'selectResume' && renderSelectResume()}
+      {view === 'comparison' && renderComparison()}
     </>
   );
 };
