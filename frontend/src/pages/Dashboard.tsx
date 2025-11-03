@@ -1,21 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Brain,
-  FileText,
   Mic,
   TrendingUp,
   Briefcase,
-  Settings,
-  LogOut,
   Bell,
   Search,
-  Award,
-  Target,
   Calendar,
   ChevronRight,
 } from 'lucide-react';
-import { userAPI, interviewAPI, resumeAPI } from '../services/api';
+import { userAPI, interviewAPI } from '../services/api';
 import './Dashboard.css';
 
 interface UserProfile {
@@ -33,7 +28,6 @@ interface InterviewStats {
 }
 
 const Dashboard = () => {
-  const navigate = useNavigate();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [interviewStats, setInterviewStats] = useState<InterviewStats | null>(null);
@@ -58,13 +52,6 @@ const Dashboard = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
-
   if (loading) {
     return (
       <div className="dashboard-loading">
@@ -76,54 +63,6 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard">
-      {/* Sidebar */}
-      <aside className="dashboard-sidebar">
-        <div className="sidebar-header">
-          <Link to="/dashboard" className="sidebar-logo">
-            <Brain size={32} color="#3b82f6" />
-            <span>PrepMind</span>
-          </Link>
-        </div>
-
-        <nav className="sidebar-nav">
-          <Link to="/dashboard" className="nav-item active">
-            <TrendingUp size={20} />
-            <span>Dashboard</span>
-          </Link>
-          <Link to="/resume-analyzer" className="nav-item">
-            <FileText size={20} />
-            <span>Resume Analyzer</span>
-          </Link>
-          <Link to="/interview" className="nav-item">
-            <Mic size={20} />
-            <span>Mock Interviews</span>
-          </Link>
-          <Link to="/roadmap" className="nav-item">
-            <Target size={20} />
-            <span>Career Roadmap</span>
-          </Link>
-          <Link to="/dsa-practice" className="nav-item">
-            <Award size={20} />
-            <span>DSA Practice</span>
-          </Link>
-          <Link to="/jobs" className="nav-item">
-            <Briefcase size={20} />
-            <span>Job Board</span>
-          </Link>
-          <Link to="/settings" className="nav-item">
-            <Settings size={20} />
-            <span>Settings</span>
-          </Link>
-        </nav>
-
-        <div className="sidebar-footer">
-          <button className="nav-item" onClick={handleLogout}>
-            <LogOut size={20} />
-            <span>Logout</span>
-          </button>
-        </div>
-      </aside>
-
       {/* Main Content */}
       <main className="dashboard-main">
         {/* Top Bar */}
