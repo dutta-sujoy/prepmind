@@ -94,7 +94,7 @@ const Dashboard = () => {
 
         {/* Dashboard Content */}
         <div className="dashboard-content">
-          <div className="content-header">
+          <div className="content-header fade-in-up">
             <div>
               <h1>Your Dashboard</h1>
               <p>Track your placement preparation progress</p>
@@ -103,7 +103,7 @@ const Dashboard = () => {
 
           {/* Stats Grid */}
           <div className="stats-grid">
-            <div className="stat-card">
+            <div className="stat-card fade-in-up" style={{ animationDelay: '0.1s' }}>
               <div className="stat-icon" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
                 <TrendingUp size={24} />
               </div>
@@ -119,7 +119,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="stat-card">
+            <div className="stat-card fade-in-up" style={{ animationDelay: '0.2s' }}>
               <div className="stat-icon" style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
                 <Briefcase size={24} />
               </div>
@@ -135,7 +135,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="stat-card">
+            <div className="stat-card fade-in-up" style={{ animationDelay: '0.3s' }}>
               <div className="stat-icon" style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
                 <Mic size={24} />
               </div>
@@ -154,7 +154,7 @@ const Dashboard = () => {
 
           {/* Quick Actions */}
           <div className="section-grid">
-            <div className="section-card">
+            <div className="section-card fade-in-up" style={{ animationDelay: '0.4s' }}>
               <div className="section-header">
                 <h2>Resume Score</h2>
                 <Link to="/resume-analyzer" className="section-link">
@@ -164,18 +164,19 @@ const Dashboard = () => {
               <div className="resume-score-content">
                 <div className="score-circle">
                   <svg viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="45" fill="none" stroke="#e2e8f0" strokeWidth="10" />
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#e2e8f0" strokeWidth="8" />
                     <circle
                       cx="50"
                       cy="50"
                       r="45"
                       fill="none"
                       stroke="#3b82f6"
-                      strokeWidth="10"
+                      strokeWidth="8"
                       strokeDasharray="282.7"
                       strokeDashoffset="56.54"
                       strokeLinecap="round"
                       transform="rotate(-90 50 50)"
+                      className="score-circle-progress"
                     />
                   </svg>
                   <div className="score-value">80%</div>
@@ -213,7 +214,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="section-card">
+            <div className="section-card fade-in-up" style={{ animationDelay: '0.5s' }}>
               <div className="section-header">
                 <h2>DSA Progress</h2>
                 <Link to="/dsa-practice" className="section-link">
@@ -252,7 +253,7 @@ const Dashboard = () => {
 
           {/* Career Roadmap & Upcoming */}
           <div className="section-grid">
-            <div className="section-card">
+            <div className="section-card fade-in-up" style={{ animationDelay: '0.6s' }}>
               <div className="section-header">
                 <h2>Career Roadmap Progress</h2>
                 <Link to="/roadmap" className="section-link">
@@ -287,7 +288,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="section-card">
+            <div className="section-card fade-in-up" style={{ animationDelay: '0.7s' }}>
               <div className="section-header">
                 <h2>Mock Interview Feedback</h2>
                 <Link to="/interview" className="section-link">
@@ -333,7 +334,7 @@ const Dashboard = () => {
           </div>
 
           {/* Upcoming Goals */}
-          <div className="section-card full-width">
+          <div className="section-card full-width fade-in-up" style={{ animationDelay: '0.8s' }}>
             <div className="section-header">
               <h2>Upcoming Goals & Tasks</h2>
               <button className="btn btn-primary">Add New</button>
