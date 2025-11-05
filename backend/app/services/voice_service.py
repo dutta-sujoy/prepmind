@@ -7,83 +7,142 @@ import os
 class VoiceService:
     """
     Voice service using free alternatives:
-    - Whisper for Speech-to-Text
-    - gTTS for Text-to-Speech
+    - Whisper for Speech-to-Text (requires ffmpeg)
+    - Edge-TTS for realistic interviewer Text-to-Speech (neural voices)
     """
 
     def __init__(self):
         self.whisper_model = None
         self.use_whisper = False
-        self.use_google_stt = False
 
-        # Try to use Google Speech-to-Text first (no ffmpeg needed!)
+        # Initialize Whisper (STT)
         try:
-            from google.cloud import speech_v1p1beta1 as speech
-            print("✅ Google Speech-to-Text available!")
-            self.use_google_stt = True
+            import whisper
+            print("Loading Whisper model...")
+            self.whisper_model = whisper.load_model("base")
+            self.use_whisper = True
+            print("✅ Whisper model loaded!")
         except Exception as e:
-            print(f"⚠️ Google Speech-to-Text not available: {e}")
-
-        # Fallback to Whisper
-        if not self.use_google_stt:
-            try:
-                import whisper
-                print("Loading Whisper model...")
-                self.whisper_model = whisper.load_model("base")
-                self.use_whisper = True
-                print("✅ Whisper model loaded!")
-            except Exception as e:
-                print(f"⚠️ Whisper not available: {e}")
-                print("Voice features will be limited")
+            print(f"⚠️ Whisper not available: {e}")
+            print("Voice features will be limited (install ffmpeg and whisper)")
 
     def transcribe_audio(self, audio_data: bytes, language_code: str = "en-US") -> Dict[str, Any]:
         """
-        Transcribe audio - SIMPLIFIED APPROACH
-        Uses browser-based transcription as backend transcription requires ffmpeg
+        Transcribe audio using Whisper.
+        Returns transcript and basic metadata. Word timings are not provided by default.
         """
         print(f"📝 Received audio for transcription: {len(audio_data)} bytes")
 
-        # For now, return a placeholder
-        # The real transcription should happen on the frontend using Web Speech API
-        # Or install ffmpeg for backend processing
+        if not self.use_whisper or self.whisper_model is None:
+            return {
+                "transcript": "",
+                "confidence": 0.0,
+                "word_timings": [],
+                "error": "Whisper not available. Please install ffmpeg and the whisper package."
+            }
 
-        return {
-            "transcript": "[Backend transcription disabled - please use frontend Web Speech API or install ffmpeg]",
-            "confidence": 0.0,
-            "word_timings": [],
-            "error": "Backend transcription requires ffmpeg. Install from: https://ffmpeg.org/download.html"
-        }
+        try:
+            # Write bytes to a temporary file for whisper to read
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+                temp_path = tmp.name
+                tmp.write(audio_data)
+
+            # Language: use primary part like 'en'
+            lang = (language_code or "en-US").split("-")[0]
+
+            # Transcribe (fp16 False for CPU)
+            result = self.whisper_model.transcribe(
+                temp_path, language=lang, fp16=False)
+
+            # Clean up temp file
+            try:
+                os.unlink(temp_path)
+            except Exception:
+                pass
+
+            transcript_text = result.get("text", "").strip()
+
+            return {
+                "transcript": transcript_text,
+                "confidence": 0.0,  # Whisper does not provide a single confidence score
+                "word_timings": [],  # Not available with default whisper
+                "error": None
+            }
+        except Exception as e:
+            return {
+                "transcript": "",
+                "confidence": 0.0,
+                "word_timings": [],
+                "error": f"Transcription error: {e}"
+            }
 
     def synthesize_speech(self, text: str, language_code: str = "en-US") -> bytes:
         """
-        Convert text to speech using gTTS (free!)
+        Convert text to speech using Edge-TTS neural voices for a realistic interviewer tone.
+        Uses the edge_tts Python API executed in a dedicated thread event loop (no CLI required).
         """
         try:
-            from gtts import gTTS
+            import asyncio
+            from threading import Thread
+            import edge_tts
 
-            # Create TTS
-            tts = gTTS(
-                text=text,
-                lang=language_code.split("-")[0],
-                slow=False
-            )
+            # Choose a professional interviewer-style voice by locale
+            lang = (language_code or "en-US").lower()
+            voice_by_lang = {
+                "en-us": "en-US-GuyNeural",      # neutral professional male
+                "en-gb": "en-GB-RyanNeural",     # British male
+                "en-in": "en-IN-PrabhatNeural",  # Indian male
+                "en-au": "en-AU-WilliamNeural",
+            }
+            voice = voice_by_lang.get(lang, "en-US-GuyNeural")
 
-            # Save to temp file
+            # Prepare temp output path
             with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp:
-                temp_path = tmp.name
-                tts.save(temp_path)
+                out_path = tmp.name
 
-            # Read audio
-            with open(temp_path, 'rb') as f:
+            async def _synthesize_async():
+                communicate = edge_tts.Communicate(text, voice)
+                await communicate.save(out_path)
+
+            # Run the coroutine in a separate thread with its own event loop
+            exc: Dict[str, Any] = {}
+
+            def _runner():
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    loop.run_until_complete(_synthesize_async())
+                except Exception as e:
+                    exc["e"] = e
+                finally:
+                    try:
+                        loop.close()
+                    except Exception:
+                        pass
+
+            t = Thread(target=_runner)
+            t.start()
+            t.join()
+
+            if "e" in exc:
+                raise exc["e"]
+
+            # Read audio bytes
+            with open(out_path, 'rb') as f:
                 audio_data = f.read()
 
-            # Clean up
-            os.unlink(temp_path)
+            try:
+                os.unlink(out_path)
+            except Exception:
+                pass
 
             return audio_data
-
+        except ModuleNotFoundError:
+            print(
+                "TTS error: edge_tts is not installed. Please run: pip install edge-tts")
+            return b""
         except Exception as e:
-            print(f"TTS error: {e}")
+            print(f"TTS error (edge_tts): {e}")
             return b""
 
     def analyze_voice_characteristics(self, word_timings: list, transcript: str) -> Dict[str, Any]:

@@ -88,6 +88,7 @@ numpy==2.3.4
 openai-whisper==20250625
 SpeechRecognition==3.14.3
 vosk==0.3.45
+edge_tts==7.2.3
 orjson==3.11.4
 ormsgpack==1.11.0
 packaging==25.0
